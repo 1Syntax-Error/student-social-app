@@ -63,27 +63,27 @@ export default function Dashboard() {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <main className="flex-1 bg-gray-50 py-8">
+      <main className="flex-1 bg-gray-50 dark:bg-dark-page py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Welcome section */}
-          <div className="bg-white rounded-lg shadow-sm p-6 mb-6 border border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-900">
+          <div className="bg-white dark:bg-dark-surface rounded-lg shadow-sm dark:shadow-none p-6 mb-6 border border-gray-200 dark:border-dark-border">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-dark-primary">
               Welcome back, {user.username}!
             </h1>
-            <p className="text-gray-600 mt-2">
+            <p className="text-gray-600 dark:text-dark-secondary mt-2">
               Your network: <span className="font-medium">{following.length}</span> Following · <span className="font-medium">{followers}</span> Followers
             </p>
             <div className="flex flex-wrap gap-3 mt-4">
               <Link
                 to="/explore"
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 dark:bg-primary-700 hover:bg-primary-700 dark:hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-dark-surface"
               >
                 <FiSearch className="mr-2" /> 
                 Explore Students
               </Link>
               <Link
                 to={`/profile/${user.id}`}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-dark-elevated hover:bg-gray-50 dark:hover:bg-dark-surface focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-dark-surface"
               >
                 <FiUser className="mr-2" /> 
                 View Your Profile
@@ -93,16 +93,16 @@ export default function Dashboard() {
           
           {/* Complete profile reminder if needed */}
           {(!user.major || !user.bio || !user.linkedin_url) && (
-            <div className="bg-yellow-50 rounded-lg shadow-sm p-6 mb-6 border border-yellow-200">
-              <h2 className="text-lg font-semibold text-yellow-800">
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg shadow-sm dark:shadow-none p-6 mb-6 border border-yellow-200 dark:border-yellow-800">
+              <h2 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200">
                 Complete your profile
               </h2>
-              <p className="text-yellow-700 mt-1 mb-4">
+              <p className="text-yellow-700 dark:text-yellow-300 mt-1 mb-4">
                 A complete profile helps you connect with more students and build your network
               </p>
               <Link
                 to="/edit-profile"
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 dark:focus:ring-offset-dark-surface"
               >
                 Update Profile
               </Link>
@@ -112,13 +112,13 @@ export default function Dashboard() {
           {/* Suggested connections section */}
           <div className="mb-8">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-dark-primary">
                 <FiUserCheck className="inline mr-2" />
                 Suggested Connections
               </h2>
               <Link 
                 to="/explore" 
-                className="text-primary-600 hover:text-primary-700 text-sm font-medium inline-flex items-center"
+                className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm font-medium inline-flex items-center"
               >
                 View All <FiArrowRight className="ml-1" />
               </Link>
@@ -136,8 +136,8 @@ export default function Dashboard() {
                 ))}
               </div>
             ) : (
-              <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-                <p className="text-gray-500">
+              <div className="bg-white dark:bg-dark-surface rounded-lg shadow-sm dark:shadow-none border border-gray-200 dark:border-dark-border p-8 text-center">
+                <p className="text-gray-500 dark:text-dark-secondary">
                   {user.major 
                     ? "We don't have any suggestions based on your major yet"
                     : "Add your major to get personalized suggestions"}
@@ -149,13 +149,13 @@ export default function Dashboard() {
           {/* Recent users section */}
           <div>
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-dark-primary">
                 <FiUsers className="inline mr-2" />
                 Recently Joined
               </h2>
               <Link 
                 to="/explore" 
-                className="text-primary-600 hover:text-primary-700 text-sm font-medium inline-flex items-center"
+                className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm font-medium inline-flex items-center"
               >
                 View All <FiArrowRight className="ml-1" />
               </Link>
@@ -173,8 +173,8 @@ export default function Dashboard() {
                 ))}
               </div>
             ) : (
-              <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-                <p className="text-gray-500">
+              <div className="bg-white dark:bg-dark-surface rounded-lg shadow-sm dark:shadow-none border border-gray-200 dark:border-dark-border p-8 text-center">
+                <p className="text-gray-500 dark:text-dark-secondary">
                   No new users to show at the moment
                 </p>
               </div>

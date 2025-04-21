@@ -1,3 +1,4 @@
+// src/components/social/FollowButton.jsx
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { mockFollowing } from '../../utils/mockData';
@@ -26,7 +27,7 @@ export default function FollowButton({ userId, isFollowing: initialIsFollowing, 
     return (
       <button
         disabled
-        className="w-full py-2 px-4 border border-gray-300 rounded-md text-gray-400 bg-gray-50 cursor-not-allowed text-sm font-medium"
+        className="w-full py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-md text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-dark-elevated cursor-not-allowed text-sm font-medium"
       >
         You
       </button>
@@ -39,8 +40,8 @@ export default function FollowButton({ userId, isFollowing: initialIsFollowing, 
       disabled={isLoading || !user}
       className={`w-full py-2 px-4 rounded-md text-sm font-medium flex items-center justify-center transition duration-200 ${
         isFollowing
-          ? 'bg-blue-50 text-blue-700 border border-blue-300 hover:bg-blue-100'
-          : 'bg-blue-600 text-white border border-transparent hover:bg-blue-700'
+          ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 border border-primary-300 dark:border-primary-800 hover:bg-primary-100 dark:hover:bg-primary-900/50'
+          : 'bg-primary-600 dark:bg-primary-700 text-white border border-transparent hover:bg-primary-700 dark:hover:bg-primary-600'
       } ${
         (isLoading || !user) ? 'opacity-50 cursor-not-allowed' : ''
       }`}

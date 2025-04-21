@@ -1,13 +1,13 @@
-// 13. src/components/social/UserCard.jsx
+// src/components/social/UserCard.jsx
 import { Link } from 'react-router-dom';
 import { FiUser, FiBookOpen } from 'react-icons/fi';
 import FollowButton from './FollowButton';
 
 export default function UserCard({ user, isFollowing, onFollowToggle }) {
   return (
-    <div className="bg-white rounded-lg shadow-sm p-4 flex flex-col border border-gray-200 hover:shadow-md transition duration-200">
+    <div className="bg-white dark:bg-dark-surface rounded-lg shadow-sm dark:shadow-none p-4 flex flex-col border border-gray-200 dark:border-dark-border hover:shadow-md dark:hover:border-gray-600 transition duration-200">
       {/* User avatar/placeholder */}
-      <div className="w-16 h-16 bg-primary-100 rounded-full mx-auto mb-4 flex items-center justify-center text-primary-600">
+      <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full mx-auto mb-4 flex items-center justify-center text-primary-600 dark:text-primary-400">
         {user.profile_image_url ? (
           <img 
             src={user.profile_image_url} 
@@ -23,13 +23,13 @@ export default function UserCard({ user, isFollowing, onFollowToggle }) {
       <div className="text-center mb-4">
         <Link 
           to={`/profile/${user.id}`}
-          className="text-lg font-semibold text-gray-800 hover:text-primary-600"
+          className="text-lg font-semibold text-gray-800 dark:text-dark-primary hover:text-primary-600 dark:hover:text-primary-400"
         >
           {user.username}
         </Link>
         
         {user.major && (
-          <div className="flex items-center justify-center mt-1 text-sm text-gray-600">
+          <div className="flex items-center justify-center mt-1 text-sm text-gray-600 dark:text-dark-secondary">
             <FiBookOpen className="mr-1" size={14} />
             {user.major}
           </div>
@@ -38,7 +38,7 @@ export default function UserCard({ user, isFollowing, onFollowToggle }) {
       
       {/* Bio preview if available */}
       {user.bio && (
-        <p className="text-gray-600 text-sm mb-4 line-clamp-2 text-center">
+        <p className="text-gray-600 dark:text-dark-secondary text-sm mb-4 line-clamp-2 text-center">
           {user.bio}
         </p>
       )}
