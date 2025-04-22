@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { mockFollowing } from '../../utils/mockData';
+import { colors } from '../../utils/colors';
 
 export default function FollowButton({ userId, isFollowing: initialIsFollowing, onFollowToggle }) {
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing || mockFollowing.includes(userId));
@@ -39,8 +40,8 @@ export default function FollowButton({ userId, isFollowing: initialIsFollowing, 
       disabled={isLoading || !user}
       className={`btn w-full flex items-center justify-center transition duration-200 ${
         isFollowing
-          ? 'bg-primary-50 text-primary-700 border border-primary-300 hover:bg-primary-100'
-          : 'btn-primary'
+          ? 'bg-primary-100 text-primary-700 border border-primary-300 hover:bg-primary-200'
+          : `${colors.sidebar.bg} ${colors.text.light}`
       } ${
         (isLoading || !user) ? 'opacity-50 cursor-not-allowed' : ''
       }`}

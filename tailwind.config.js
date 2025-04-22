@@ -8,32 +8,33 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Background color - light blue from the image
-        "background": "#e6f7ff",
-        // Primary colors - blue shades
-        "primary": {
-          DEFAULT: "#0284c7",
-          50: "#f0f9ff",
-          100: "#e0f2fe",
-          200: "#bae6fd",
-          300: "#7dd3fc", 
-          400: "#38bdf8",
-          500: "#0ea5e9",
-          600: "#0284c7", // Main button color
-          700: "#0369a1",
-          800: "#075985",
-          900: "#0c4a6e"
+        // Brown theme colors
+        "background": "#F8F7F6",
+        "sidebar": {
+          "DEFAULT": "#614B3B",
+          "hover": "#725A49",
+          "active": "#725A49"
         },
-        // Card and border colors
-        "card": "#ffffff",
-        "border": "#e2e8f0",
-        // Text colors
-        "text": {
-          DEFAULT: "#0f172a",
-          primary: "#0f172a",
-          secondary: "#334155",
-          muted: "#64748b"
-        }
+        // Primary colors - brown shades
+        "primary": {
+          DEFAULT: "#8B6F5C",
+          50: "#F8F7F6",
+          100: "#E5E1DD",
+          200: "#D2C9C2",
+          300: "#B4A194",
+          400: "#9D8475",
+          500: "#8B6F5C",
+          600: "#725A49",
+          700: "#614B3B",
+          800: "#4A3C2F",
+          900: "#3A2E24"
+        },
+        "card": {
+          "primary": "#8B6F5C",
+          "secondary": "#B4A194",
+          "accent": "#9D8475"
+        },
+        "border": "#E5E1DD",
       },
       borderRadius: {
         "none": "0px",

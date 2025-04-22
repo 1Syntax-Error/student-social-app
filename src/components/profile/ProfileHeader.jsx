@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { FiEdit2, FiUser, FiUsers, FiUserCheck } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import FollowButton from '../social/FollowButton';
+import { colors } from '../../utils/colors';
 
 export default function ProfileHeader({ profile, isFollowing, followers, following, onFollowToggle }) {
   const { user } = useAuth();
@@ -12,7 +13,7 @@ export default function ProfileHeader({ profile, isFollowing, followers, followi
       <div className="flex flex-col md:flex-row">
         {/* Profile image/avatar */}
         <div className="flex-shrink-0 mb-4 md:mb-0 md:mr-6">
-          <div className="w-24 h-24 bg-primary-100 rounded-full flex items-center justify-center text-primary-600">
+          <div className={`w-24 h-24 ${colors.card.accent} rounded-full flex items-center justify-center ${colors.text.light}`}>
             {profile.profile_image_url ? (
               <img 
                 src={profile.profile_image_url} 
@@ -29,9 +30,9 @@ export default function ProfileHeader({ profile, isFollowing, followers, followi
         <div className="flex-1">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl font-bold text-text-primary">{profile.username}</h1>
+              <h1 className={`text-2xl font-bold ${colors.text.primary}`}>{profile.username}</h1>
               {profile.major && (
-                <p className="text-text-secondary">{profile.major}</p>
+                <p className={`${colors.text.secondary}`}>{profile.major}</p>
               )}
             </div>
             
@@ -39,7 +40,7 @@ export default function ProfileHeader({ profile, isFollowing, followers, followi
               {isOwnProfile ? (
                 <Link
                   to="/edit-profile"
-                  className="btn inline-flex items-center"
+                  className={`btn ${colors.sidebar.bg} ${colors.text.light} inline-flex items-center`}
                 >
                   <FiEdit2 className="mr-2" />
                   Edit Profile
@@ -55,16 +56,16 @@ export default function ProfileHeader({ profile, isFollowing, followers, followi
           </div>
           
           {profile.bio && (
-            <p className="text-text-secondary mb-4">{profile.bio}</p>
+            <p className={`${colors.text.secondary} mb-4`}>{profile.bio}</p>
           )}
           
           {/* Follower/Following counts */}
           <div className="flex space-x-4">
-            <div className="flex items-center text-text-secondary">
+            <div className={`flex items-center ${colors.text.secondary}`}>
               <FiUsers className="mr-1" />
               <span>{followers} Followers</span>
             </div>
-            <div className="flex items-center text-text-secondary">
+            <div className={`flex items-center ${colors.text.secondary}`}>
               <FiUserCheck className="mr-1" />
               <span>{following} Following</span>
             </div>
