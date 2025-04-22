@@ -1,4 +1,3 @@
-// 9. src/components/auth/LoginForm.jsx
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -64,13 +63,13 @@ export default function LoginForm() {
 
   if (magicLinkSent) {
     return (
-      <div className="max-w-md w-full mx-auto bg-white p-8 rounded-lg shadow-md">
+      <div className="card p-8 w-full max-w-md mx-auto">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Check your email</h2>
-          <p className="text-gray-600 mb-6">
+          <h2 className="text-2xl font-bold text-text-primary mb-2">Check your email</h2>
+          <p className="text-text-secondary mb-6">
             We've sent a magic link to <span className="font-medium">{email}</span>
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-text-muted">
             Click the link in the email to sign in to your account.
           </p>
         </div>
@@ -79,11 +78,11 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="max-w-md w-full mx-auto bg-white p-8 rounded-lg shadow-md">
+    <div className="card p-8 w-full max-w-md mx-auto">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-primary-600">Campus Connect</h1>
-        <h2 className="text-2xl font-bold text-gray-800 mt-6">Welcome back</h2>
-        <p className="text-gray-600">Sign in to your account</p>
+        <h2 className="text-2xl font-bold text-text-primary mt-6">Welcome back</h2>
+        <p className="text-text-secondary">Sign in to your account</p>
       </div>
       
       {error && (
@@ -94,19 +93,19 @@ export default function LoginForm() {
       
       <form onSubmit={handleEmailPassword} className="space-y-6">
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="email" className="block text-sm font-medium text-text-secondary mb-1">
             Email
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <FiMail className="text-gray-400" />
+              <FiMail className="text-text-muted" />
             </div>
             <input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="input pl-10"
               placeholder="you@university.edu"
             />
           </div>
@@ -114,19 +113,19 @@ export default function LoginForm() {
         
         {!useMagicLink && (
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="password" className="block text-sm font-medium text-text-secondary mb-1">
               Password
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FiLock className="text-gray-400" />
+                <FiLock className="text-text-muted" />
               </div>
               <input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="input pl-10"
                 placeholder="••••••••"
               />
             </div>
@@ -137,7 +136,7 @@ export default function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex justify-center items-center gap-2 py-2 px-4 border border-transparent rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn btn-primary w-full flex justify-center items-center gap-2"
           >
             {loading ? (
               'Loading...'
@@ -154,16 +153,16 @@ export default function LoginForm() {
       <div className="mt-4 text-center">
         <button
           onClick={toggleAuthMethod}
-          className="text-sm text-primary-600 hover:text-primary-500 font-medium"
+          className="text-sm text-primary-600 hover:text-primary-700 font-medium"
         >
           {useMagicLink ? 'Use Password Instead' : 'Use Magic Link Instead'}
         </button>
       </div>
       
       <div className="mt-6 text-center">
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-text-secondary">
           Don't have an account?{' '}
-          <Link to="/signup" className="font-medium text-primary-600 hover:text-primary-500">
+          <Link to="/signup" className="font-medium text-primary-600 hover:text-primary-700">
             Sign up
           </Link>
         </p>

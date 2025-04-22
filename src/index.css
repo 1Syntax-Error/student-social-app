@@ -1,63 +1,58 @@
+/* index.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Import dark mode styles */
-@import './styles/darkMode.css';
-
-/* Default styles */
-:root {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-family: var(--font-sans);
+body {
+  background-color: #e6f7ff;
+  color: #0f172a;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-html, body {
-  height: 100%;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-}
-
-#root {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Force dark mode for testing (remove in production) */
-/* :root { 
-  data-theme: "dark";
-} */
-
-/* Theme transitions */
-.theme-transition {
-  transition: color 0.2s ease, background-color 0.2s ease;
-}
-
-/* Fix overlapping shadows in dark mode */
-.dark .shadow-md {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.15);
-}
-
-/* Custom utilities */
-@layer utilities {
-  .text-shadow {
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+@layer components {
+  /* Button styling */
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600/50 focus-visible:ring-offset-2 disabled:opacity-50;
   }
-
-  .text-shadow-sm {
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  
+  .btn-primary {
+    @apply bg-primary-600 text-white hover:bg-primary-700;
   }
-
-  .text-shadow-md {
-    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08);
+  
+  .btn-secondary {
+    @apply bg-white text-gray-700 border border-gray-300 hover:bg-gray-50;
   }
-
-  .text-shadow-lg {
-    text-shadow: 0 15px 30px rgba(0, 0, 0, 0.11), 0 5px 15px rgba(0, 0, 0, 0.08);
+  
+  /* Card styling */
+  .card {
+    @apply bg-white rounded-lg border border-gray-200 shadow-card;
   }
-
-  .text-shadow-none {
-    text-shadow: none;
+  
+  /* Input styling */
+  .input {
+    @apply h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-600/50 focus:border-primary-500;
+  }
+  
+  /* Badge styling (like the small calendar items) */
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+  
+  .badge-primary {
+    @apply bg-primary-100 text-primary-800;
+  }
+  
+  /* Calendar day styling */
+  .calendar-day {
+    @apply flex items-center justify-center w-8 h-8 rounded-md;
+  }
+  
+  .calendar-day-active {
+    @apply bg-primary-600 text-white;
+  }
+  
+  /* Chart styling */
+  .chart-bar {
+    @apply bg-primary-500 rounded-t-sm;
   }
 }
