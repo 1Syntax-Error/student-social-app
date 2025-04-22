@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
+import { colors } from '../utils/colors';
 
 export default function Home() {
   const { user } = useAuth();
@@ -12,7 +13,7 @@ export default function Home() {
       
       <main className="flex-1">
         {/* Hero section */}
-        <div className="bg-primary-600 text-white py-16">
+        <div className={`${colors.card.primary} text-white py-16`}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="lg:flex lg:items-center lg:justify-between">
               <div className="lg:w-1/2">
@@ -23,12 +24,20 @@ export default function Home() {
                   Build your professional network, find study partners, and connect with peers in your major.
                 </p>
                 {user ? (
-                  <Link
-                    to="/dashboard"
-                    className="btn btn-secondary"
-                  >
-                    Go to Dashboard
-                  </Link>
+                  <div className="flex flex-wrap gap-4">
+                    <Link
+                      to="/dashboard"
+                      className="btn btn-secondary"
+                    >
+                      Go to Dashboard
+                    </Link>
+                    <Link
+                      to="/explore"
+                      className={`btn ${colors.sidebar.bg} ${colors.text.light} hover:bg-primary-700`}
+                    >
+                      Explore Students
+                    </Link>
+                  </div>
                 ) : (
                   <div className="space-x-4">
                     <Link
