@@ -1,7 +1,7 @@
 // src/pages/Dashboard.jsx
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { FiUsers, FiSearch, FiUserCheck, FiUser, FiArrowRight } from 'react-icons/fi';
+import { Link, useNavigate } from 'react-router-dom';
+import { FiUsers, FiSearch, FiUserCheck, FiUser, FiArrowRight, FiEdit3, FiBookOpen, FiMail, FiLinkedin, FiUserPlus } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { mockUsers, mockFollowing } from '../utils/mockData';
 import Navbar from '../components/layout/Navbar';
@@ -65,30 +65,127 @@ export default function Dashboard() {
       
       <main className="flex-1 bg-gray-50 dark:bg-dark-page py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Welcome section */}
-          <div className="bg-white dark:bg-dark-surface rounded-lg shadow-sm dark:shadow-none p-6 mb-6 border border-gray-200 dark:border-dark-border">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-dark-primary">
-              Welcome back, {user.username}!
-            </h1>
-            <p className="text-gray-600 dark:text-dark-secondary mt-2">
-              Your network: <span className="font-medium">{following.length}</span> Following · <span className="font-medium">{followers}</span> Followers
-            </p>
-            <div className="flex flex-wrap gap-3 mt-4">
-              <Link
-                to="/explore"
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 dark:bg-primary-700 hover:bg-primary-700 dark:hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-dark-surface"
-              >
-                <FiSearch className="mr-2" /> 
-                Explore Students
-              </Link>
-              <Link
-                to={`/profile/${user.id}`}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-dark-elevated hover:bg-gray-50 dark:hover:bg-dark-surface focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-dark-surface"
-              >
-                <FiUser className="mr-2" /> 
-                View Your Profile
-              </Link>
+          {/* Enlarged welcome section */}
+          <div className="bg-gradient-to-br from-white to-primary-50 dark:bg-dark-surface rounded-lg shadow-md dark:shadow-none p-8 mb-6 border border-primary-200 dark:border-dark-border">
+            <div className="flex flex-col md:flex-row gap-6">
+              {/* Avatar with larger size */}
+              <div className="flex-shrink-0">
+                <div className="w-36 h-36 bg-primary-600 rounded-full flex items-center justify-center text-white shadow-lg border-4 border-primary-300">
+                  {user.profile_image_url ? (
+                    <img 
+                      src={user.profile_image_url} 
+                      alt={`${user.username}'s profile`} 
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <FiUser size={56} />
+                  )}
+                </div>
+              </div>
+              
+              {/* User info */}
+              <div className="flex-1">
+                <h1 className="text-3xl font-bold text-primary-800 dark:text-dark-primary mb-2 border-b-2 border-primary-300 pb-2">
+                  Welcome back, {user.username}!
+                </h1>
+                
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h2 className="text-lg font-medium text-primary-700 dark:text-dark-primary">Profile</h2>
+                    <ul className="mt-2 space-y-2">
+                      <li className="flex items-center text-gray-700 dark:text-dark-secondary p-2 rounded-md bg-white bg-opacity-60 hover:bg-primary-100 transition-colors duration-200 shadow-sm">
+                        <FiMail className="mr-2 text-primary-600" />
+                        {user.email}
+                      </li>
+                      <li className="flex items-center text-gray-700 dark:text-dark-secondary p-2 rounded-md bg-white bg-opacity-60 hover:bg-primary-100 transition-colors duration-200 shadow-sm">
+                        <FiBookOpen className="mr-2 text-primary-600" />
+                        {user.major ? user.major : <span className="text-gray-400">Add your major</span>}
+                      </li>
+                      <li className="flex items-center text-gray-700 dark:text-dark-secondary p-2 rounded-md bg-white bg-opacity-60 hover:bg-primary-100 transition-colors duration-200 shadow-sm">
+                        <FiLinkedin className="mr-2 text-primary-600" />
+                        {user.linkedin_url ? 
+                          <a 
+                            href={user.linkedin_url.startsWith('http') ? user.linkedin_url : `https://${user.linkedin_url}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-primary-700 hover:underline font-medium"
+                          >
+                            LinkedIn Profile
+                          </a> : 
+                          <span className="text-gray-400">Add LinkedIn URL</span>
+                        }
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h2 className="text-lg font-medium text-primary-700 dark:text-dark-primary mb-2">Your Network</h2>
+                    <div className="flex items-center space-x-3">
+                      <button 
+                        className="bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-md shadow-sm flex items-center justify-center space-x-1.5 transition-colors duration-200"
+                        onClick={() => navigate(`/profile/${user.id}/following`)}
+                      >
+                        <FiUserCheck className="text-base" />
+                        <span className="text-sm font-medium whitespace-nowrap">Following ({following.length})</span>
+                      </button>
+                      <button 
+                        className="bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-md shadow-sm flex items-center justify-center space-x-1.5 transition-colors duration-200"
+                        onClick={() => navigate(`/profile/${user.id}/followers`)}
+                      >
+                        <FiUsers className="text-base" />
+                        <span className="text-sm font-medium whitespace-nowrap">Followers ({followers})</span>
+                      </button>
+                      <button 
+                        className="bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-md shadow-sm flex items-center justify-center space-x-1.5 transition-colors duration-200"
+                        onClick={() => alert('Friend request feature coming soon!')}
+                      >
+                        <FiUserPlus className="text-base" />
+                        <span className="text-sm font-medium whitespace-nowrap">Pending Request</span>
+                      </button>
+                    </div>
+                    
+                    <div className="mt-4">
+                      {user.bio ? (
+                        <div className="bg-white rounded-lg p-3 shadow-sm border border-primary-100">
+                          <h3 className="text-sm font-medium text-primary-700 mb-1">Bio</h3>
+                          <p className="text-gray-700 dark:text-dark-secondary">{user.bio}</p>
+                        </div>
+                      ) : (
+                        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
+                          <h3 className="text-sm font-medium text-primary-700 mb-1">Bio</h3>
+                          <p className="text-gray-400 italic text-sm">Add a bio to tell others about yourself</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
+          
+          {/* Action buttons moved outside the card with consistent styling */}
+          <div className="flex flex-wrap gap-3 mb-8">
+            <Link
+              to="/explore"
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-dark-surface"
+            >
+              <FiSearch className="mr-2" /> 
+              <span className="whitespace-nowrap">Explore Students</span>
+            </Link>
+            <Link
+              to={`/profile/${user.id}`}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-dark-surface"
+            >
+              <FiUser className="mr-2" /> 
+              <span className="whitespace-nowrap">View Your Profile</span>
+            </Link>
+            <Link
+              to="/edit-profile"
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-dark-surface"
+            >
+              <FiEdit3 className="mr-2" /> 
+              <span className="whitespace-nowrap">Edit Profile</span>
+            </Link>
           </div>
           
           {/* Complete profile reminder if needed */}
