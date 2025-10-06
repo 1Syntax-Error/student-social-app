@@ -1,26 +1,17 @@
 // src/utils/supabaseClient.js
-// This is a mock implementation since we're not doing backend coding
+import { createClient } from '@supabase/supabase-js';
 
-export const supabase = {
-    // Mock methods that return promises with mock data
-    from: (table) => ({
-      select: () => ({
-        eq: () => ({ 
-          single: () => Promise.resolve({ data: null }),
-          limit: () => Promise.resolve({ data: [] })
-        }),
-        order: () => ({
-          limit: () => Promise.resolve({ data: [] })
-        }),
-        limit: () => Promise.resolve({ data: [] })
-      }),
-      insert: () => Promise.resolve({ data: null, error: null }),
-      update: () => Promise.resolve({ data: null, error: null }),
-      delete: () => Promise.resolve({ data: null, error: null })
-    }),
-    auth: {
-      signIn: () => Promise.resolve({ user: null, error: null }),
-      signUp: () => Promise.resolve({ user: null, error: null }),
-      signOut: () => Promise.resolve()
-    }
-  };
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing Supabase environment variables. Please check your .env file.');
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  }
+});

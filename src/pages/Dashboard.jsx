@@ -263,41 +263,6 @@ export default function Dashboard() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-              <Link
-                to="/mentorship"
-                className="card p-4 sm:p-6 hover:shadow-lg transition-shadow group"
-              >
-                <div className="flex items-center mb-3">
-                  <div className="p-3 bg-accent-lavender/10 dark:bg-accent-lavender/20 rounded-lg group-hover:bg-accent-lavender/20 dark:group-hover:bg-accent-lavender/30 transition-colors">
-                    <FiAward className="text-accent-lavender" size={24} />
-                  </div>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary mb-1">
-                  Mentorship
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-dark-text-secondary">
-                  Connect with mentors or become one
-                </p>
-              </Link>
-
-              <Link
-                to="/explore"
-                className="card p-4 sm:p-6 hover:shadow-lg transition-shadow group"
-              >
-                <div className="flex items-center mb-3">
-                  <div className="p-3 bg-primary-100 dark:bg-primary-900/30 rounded-lg group-hover:bg-primary-200 dark:group-hover:bg-primary-800/40 transition-colors">
-                    <FiSearch className="text-primary-600 dark:text-primary-400" size={24} />
-                  </div>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary mb-1">
-                  Find Classmates
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-dark-text-secondary">
-                  Search by major, interests, and courses
-                </p>
-              </Link>
-            </div>
           </div>
 
           {/* Complete profile reminder if needed */}
