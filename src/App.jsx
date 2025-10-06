@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { DarkModeProvider } from './contexts/DarkModeContext';
 
 // Import pages
 import Home from './pages/Home';
@@ -9,6 +10,11 @@ import Dashboard from './pages/Dashboard';
 import Explore from './pages/Explore';
 import Profile from './pages/Profile';
 import EditProfile from './pages/EditProfile';
+import StudyGroups from './pages/StudyGroups';
+import Events from './pages/Events';
+import CourseReviews from './pages/CourseReviews';
+import Resources from './pages/Resources';
+import Mentorship from './pages/Mentorship';
 
 // Protected route component
 function ProtectedRoute({ children }) {
@@ -29,47 +35,89 @@ function ProtectedRoute({ children }) {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <div className="min-h-screen bg-background text-text-primary">
-          <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            
-            {/* Protected routes */}
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/explore" 
-              element={
-                <ProtectedRoute>
-                  <Explore />
-                </ProtectedRoute>
-              } 
-            />
-            <Route path="/profile/:id" element={<Profile />} />
-            <Route 
-              path="/edit-profile" 
-              element={
-                <ProtectedRoute>
-                  <EditProfile />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* Catch all - redirect to home */}
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </div>
-      </Router>
-    </AuthProvider>
+    <DarkModeProvider>
+      <AuthProvider>
+        <Router>
+          <div className="min-h-screen bg-background text-text-primary dark:bg-dark-bg dark:text-dark-text-primary">
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+
+              {/* Protected routes */}
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/explore"
+                element={
+                  <ProtectedRoute>
+                    <Explore />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/profile/:id" element={<Profile />} />
+              <Route
+                path="/edit-profile"
+                element={
+                  <ProtectedRoute>
+                    <EditProfile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/study-groups"
+                element={
+                  <ProtectedRoute>
+                    <StudyGroups />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/events"
+                element={
+                  <ProtectedRoute>
+                    <Events />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/course-reviews"
+                element={
+                  <ProtectedRoute>
+                    <CourseReviews />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/resources"
+                element={
+                  <ProtectedRoute>
+                    <Resources />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/mentorship"
+                element={
+                  <ProtectedRoute>
+                    <Mentorship />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Catch all - redirect to home */}
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+          </div>
+        </Router>
+      </AuthProvider>
+    </DarkModeProvider>
   );
 }

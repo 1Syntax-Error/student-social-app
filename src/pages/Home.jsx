@@ -8,19 +8,19 @@ export default function Home() {
   const { user } = useAuth();
   
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background dark:bg-dark-bg">
       <Navbar />
-      
+
       <main className="flex-1">
         {/* Hero section */}
-        <div className={`${colors.card.primary} text-white py-16`}>
+        <div className="bg-gradient-to-br from-primary-600 to-primary-800 dark:from-primary-700 dark:to-primary-900 text-white py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="lg:flex lg:items-center lg:justify-between">
               <div className="lg:w-1/2">
                 <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl mb-6">
                   Connect with students at your university
                 </h1>
-                <p className="text-xl lg:text-2xl mb-8">
+                <p className="text-xl lg:text-2xl mb-8 text-primary-50">
                   Build your professional network, find study partners, and connect with peers in your major.
                 </p>
                 {user ? (
@@ -60,44 +60,44 @@ export default function Home() {
         </div>
         
         {/* Features section */}
-        <div className="py-16 bg-white">
+        <div className="py-16 bg-white dark:bg-dark-surface">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-text-primary sm:text-4xl">
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-dark-text-primary sm:text-4xl">
                 Connect and Collaborate
               </h2>
-              <p className="mt-4 text-xl text-text-secondary">
+              <p className="mt-4 text-xl text-gray-600 dark:text-dark-text-secondary">
                 Campus Connect helps you build meaningful academic and professional relationships
               </p>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {/* Feature 1 */}
               <div className="card p-6">
-                <h3 className="text-xl font-medium text-text-primary mb-2">
+                <h3 className="text-xl font-medium text-gray-900 dark:text-dark-text-primary mb-2">
                   Create Your Profile
                 </h3>
-                <p className="text-text-secondary">
+                <p className="text-gray-600 dark:text-dark-text-secondary">
                   Showcase your academic interests, major, and professional goals to connect with like-minded peers.
                 </p>
               </div>
-              
+
               {/* Feature 2 */}
               <div className="card p-6">
-                <h3 className="text-xl font-medium text-text-primary mb-2">
+                <h3 className="text-xl font-medium text-gray-900 dark:text-dark-text-primary mb-2">
                   Find Students by Major
                 </h3>
-                <p className="text-text-secondary">
+                <p className="text-gray-600 dark:text-dark-text-secondary">
                   Easily discover and connect with students in your field of study or explore different disciplines.
                 </p>
               </div>
-              
+
               {/* Feature 3 */}
               <div className="card p-6">
-                <h3 className="text-xl font-medium text-text-primary mb-2">
+                <h3 className="text-xl font-medium text-gray-900 dark:text-dark-text-primary mb-2">
                   Build Your Network
                 </h3>
-                <p className="text-text-secondary">
+                <p className="text-gray-600 dark:text-dark-text-secondary">
                   Follow other students, share profiles, and expand your academic and professional connections.
                 </p>
               </div>

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Read(//c/Users/Mommy Cici/Downloads/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

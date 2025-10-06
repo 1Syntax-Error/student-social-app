@@ -28,13 +28,13 @@ export default function Explore() {
   }
   
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background dark:bg-dark-bg">
       <Navbar />
-      
-      <main className="flex-1 bg-gray-50 py-8">
+
+      <main className="flex-1 bg-gray-50 dark:bg-dark-bg py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          <div className="bg-white dark:bg-dark-surface rounded-lg shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-dark-border mb-6">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-dark-text-primary mb-4">
               Explore Students
             </h1>
             

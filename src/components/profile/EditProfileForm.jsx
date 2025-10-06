@@ -133,12 +133,12 @@ export default function EditProfileForm() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* First Name */}
         <div>
-          <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-1">
             First Name
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <FiUser className="text-gray-400" />
+              <FiUser className="text-gray-400 dark:text-gray-500" />
             </div>
             <input
               type="text"
@@ -146,20 +146,20 @@ export default function EditProfileForm() {
               name="firstName"
               value={formData.firstName}
               onChange={handleChange}
-              className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="input pl-10"
               placeholder="Your first name"
             />
           </div>
         </div>
-        
+
         {/* Last Name */}
         <div>
-          <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-1">
             Last Name
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <FiUser className="text-gray-400" />
+              <FiUser className="text-gray-400 dark:text-gray-500" />
             </div>
             <input
               type="text"
@@ -167,21 +167,21 @@ export default function EditProfileForm() {
               name="lastName"
               value={formData.lastName}
               onChange={handleChange}
-              className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="input pl-10"
               placeholder="Your last name"
             />
           </div>
         </div>
       </div>
-      
+
       {/* Username */}
       <div>
-        <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-1">
           Username*
         </label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <FiUser className="text-gray-400" />
+            <FiUser className="text-gray-400 dark:text-gray-500" />
           </div>
           <input
             type="text"
@@ -189,7 +189,7 @@ export default function EditProfileForm() {
             name="username"
             value={formData.username}
             onChange={handleChange}
-            className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            className="input pl-10"
             required
             placeholder="Choose a username"
           />
@@ -198,7 +198,7 @@ export default function EditProfileForm() {
 
       {/* Gender */}
       <div>
-        <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="gender" className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-1">
           Gender
         </label>
         <select
@@ -206,7 +206,7 @@ export default function EditProfileForm() {
           name="gender"
           value={formData.gender}
           onChange={handleChange}
-          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          className="input"
         >
           <option value="">Select gender</option>
           {GENDER_OPTIONS.map(gender => (
@@ -219,12 +219,12 @@ export default function EditProfileForm() {
 
       {/* Birth Date */}
       <div>
-        <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="birthDate" className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-1">
           Birth Date
         </label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <FiCalendar className="text-gray-400" />
+            <FiCalendar className="text-gray-400 dark:text-gray-500" />
           </div>
           <input
             type="date"
@@ -232,19 +232,19 @@ export default function EditProfileForm() {
             name="birthDate"
             value={formData.birthDate}
             onChange={handleChange}
-            className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            className="input pl-10"
           />
         </div>
       </div>
 
       {/* Location */}
       <div>
-        <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="location" className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-1">
           Location
         </label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <FiHome className="text-gray-400" />
+            <FiHome className="text-gray-400 dark:text-gray-500" />
           </div>
           <input
             type="text"
@@ -252,15 +252,15 @@ export default function EditProfileForm() {
             name="location"
             value={formData.location}
             onChange={handleChange}
-            className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            className="input pl-10"
             placeholder="City, State"
           />
         </div>
       </div>
-      
+
       {/* Bio */}
       <div>
-        <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="bio" className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-1">
           Bio
         </label>
         <textarea
@@ -436,24 +436,24 @@ export default function EditProfileForm() {
   );
   
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Edit Profile</h1>
-      
+    <div className="bg-white dark:bg-dark-surface border border-gray-200 dark:border-dark-border rounded-lg shadow-sm p-4 sm:p-6">
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-dark-text-primary mb-6">Edit Profile</h1>
+
       {error && (
-        <div className="bg-red-50 text-red-600 p-3 rounded-md mb-4">
+        <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-md mb-4">
           {error}
         </div>
       )}
 
       {/* Section Tabs */}
-      <div className="border-b border-gray-200 mb-6">
-        <nav className="flex -mb-px space-x-8">
+      <div className="border-b border-gray-200 dark:border-dark-border mb-6">
+        <nav className="flex -mb-px space-x-4 sm:space-x-8 overflow-x-auto">
           <button
             onClick={() => setActiveSection('personal')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+            className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
               activeSection === 'personal'
-                ? 'border-primary-600 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-primary-600 text-primary-600 dark:text-primary-400'
+                : 'border-transparent text-gray-500 dark:text-dark-text-secondary hover:text-gray-700 dark:hover:text-dark-text-primary hover:border-gray-300 dark:hover:border-dark-border'
             }`}
           >
             <FiUser className="inline mr-2" />
@@ -461,10 +461,10 @@ export default function EditProfileForm() {
           </button>
           <button
             onClick={() => setActiveSection('education')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+            className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
               activeSection === 'education'
-                ? 'border-primary-600 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-primary-600 text-primary-600 dark:text-primary-400'
+                : 'border-transparent text-gray-500 dark:text-dark-text-secondary hover:text-gray-700 dark:hover:text-dark-text-primary hover:border-gray-300 dark:hover:border-dark-border'
             }`}
           >
             <FiBookOpen className="inline mr-2" />
@@ -472,10 +472,10 @@ export default function EditProfileForm() {
           </button>
           <button
             onClick={() => setActiveSection('social')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm ${
+            className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
               activeSection === 'social'
-                ? 'border-primary-600 text-primary-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-primary-600 text-primary-600 dark:text-primary-400'
+                : 'border-transparent text-gray-500 dark:text-dark-text-secondary hover:text-gray-700 dark:hover:text-dark-text-primary hover:border-gray-300 dark:hover:border-dark-border'
             }`}
           >
             <FiUsers className="inline mr-2" />
@@ -483,18 +483,18 @@ export default function EditProfileForm() {
           </button>
         </nav>
       </div>
-      
+
       <form onSubmit={handleSubmit}>
         {activeSection === 'personal' && renderPersonalInfoSection()}
         {activeSection === 'education' && renderEducationSection()}
         {activeSection === 'social' && renderSocialSection()}
-        
+
         {/* Action buttons */}
-        <div className="flex justify-end space-x-3 pt-6 mt-6 border-t border-gray-200">
+        <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 mt-6 border-t border-gray-200 dark:border-dark-border">
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+            className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-dark-border rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-dark-text-primary bg-white dark:bg-dark-bg hover:bg-gray-50 dark:hover:bg-dark-border focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
           >
             <FiX className="mr-2" /> Cancel
           </button>

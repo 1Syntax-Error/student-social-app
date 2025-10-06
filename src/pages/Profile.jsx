@@ -110,28 +110,28 @@ export default function Profile() {
   
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-background dark:bg-dark-bg">
         <Navbar />
-        <main className="flex-1 bg-gray-50 py-8 flex items-center justify-center">
+        <main className="flex-1 bg-gray-50 dark:bg-dark-bg py-8 flex items-center justify-center">
           <div className="flex flex-col items-center">
-            <FiLoader size={32} className="text-primary-500 animate-spin mb-4" />
-            <p className="text-gray-500">Loading profile...</p>
+            <FiLoader size={32} className="text-primary-500 dark:text-primary-400 animate-spin mb-4" />
+            <p className="text-gray-500 dark:text-dark-text-secondary">Loading profile...</p>
           </div>
         </main>
         <Footer />
       </div>
     );
   }
-  
+
   if (error || !profileData) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-background dark:bg-dark-bg">
         <Navbar />
-        <main className="flex-1 bg-gray-50 py-8 flex items-center justify-center">
+        <main className="flex-1 bg-gray-50 dark:bg-dark-bg py-8 flex items-center justify-center">
           <div className="flex flex-col items-center text-center max-w-md px-4">
-            <FiUserX size={48} className="text-gray-400 mb-4" />
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">Profile Not Found</h1>
-            <p className="text-gray-600">
+            <FiUserX size={48} className="text-gray-400 dark:text-gray-500 mb-4" />
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-dark-text-primary mb-2">Profile Not Found</h1>
+            <p className="text-gray-600 dark:text-dark-text-secondary">
               {error || "The profile you're looking for doesn't exist or has been removed."}
             </p>
           </div>
@@ -140,12 +140,12 @@ export default function Profile() {
       </div>
     );
   }
-  
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background dark:bg-dark-bg">
       <Navbar />
-      
-      <main className="flex-1 bg-gray-50 py-8">
+
+      <main className="flex-1 bg-gray-50 dark:bg-dark-bg py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Profile header with follow button */}
           <ProfileHeader

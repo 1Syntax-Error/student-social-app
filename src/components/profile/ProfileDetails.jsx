@@ -8,23 +8,23 @@ export default function ProfileDetails({ profile }) {
   // Function to render social media links
   const renderSocialLink = (url, icon, label) => {
     if (!url) return null;
-    
+
     return (
       <a
         href={url.startsWith('http') ? url : `https://${url}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center text-gray-600 hover:text-primary-600"
+        className="flex items-center text-gray-600 dark:text-dark-text-secondary hover:text-primary-600 dark:hover:text-primary-400"
       >
         {icon}
         <span className="ml-2">{label}</span>
       </a>
     );
   };
-  
+
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-6">
-      <h2 className="text-lg font-medium text-gray-900 mb-4">Connect</h2>
+    <div className="bg-white dark:bg-dark-surface border border-gray-200 dark:border-dark-border rounded-lg shadow-sm p-4 sm:p-6 mb-6">
+      <h2 className="text-lg font-medium text-gray-900 dark:text-dark-text-primary mb-4">Connect</h2>
       
       <div className="space-y-3">
         {/* LinkedIn */}
@@ -84,7 +84,7 @@ export default function ProfileDetails({ profile }) {
         
         {/* Message if no links are available */}
         {!profile.linkedin_url && Object.keys(otherSocials).length === 0 && (
-          <p className="text-gray-500 italic">No social links added yet</p>
+          <p className="text-gray-500 dark:text-dark-text-secondary italic">No social links added yet</p>
         )}
       </div>
     </div>

@@ -5,48 +5,67 @@ export default {
     "./index.html",
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        // Brown theme colors
-        "background": "#F8F7F6",
+        // Modern calm theme colors - soft blue-gray palette
+        "background": "#FAFBFC",
         "sidebar": {
-          "DEFAULT": "#614B3B",
-          "hover": "#725A49",
-          "active": "#725A49"
+          "DEFAULT": "#6B7A99",
+          "hover": "#7A89A8",
+          "active": "#5C6B89"
         },
-        // Primary colors - brown shades
+        // Primary colors - slate blue shades
         "primary": {
-          DEFAULT: "#8B6F5C",
-          50: "#F8F7F6",
-          100: "#E5E1DD",
-          200: "#D2C9C2",
-          300: "#B4A194",
-          400: "#9D8475",
-          500: "#8B6F5C",
-          600: "#725A49",
-          700: "#614B3B",
-          800: "#4A3C2F",
-          900: "#3A2E24"
+          DEFAULT: "#6B7A99",
+          50: "#F8F9FB",
+          100: "#EEF1F6",
+          200: "#DDE2EC",
+          300: "#B8C2D6",
+          400: "#8B94B8",
+          500: "#6B7A99",
+          600: "#5C6B89",
+          700: "#4D5B75",
+          800: "#3E4A5E",
+          900: "#2F3947"
+        },
+        "accent": {
+          "teal": "#5C9CA8",
+          "sage": "#90B4A3",
+          "peach": "#E8A598",
+          "lavender": "#8B94B8"
         },
         "card": {
-          "primary": "#8B6F5C",
-          "secondary": "#B4A194",
-          "accent": "#9D8475"
+          "primary": "#6B7A99",
+          "secondary": "#8B94B8",
+          "accent": "#5C9CA8"
         },
-        "border": "#E5E1DD",
+        "border": "#E5E7EB",
+        // Dark mode colors
+        "dark": {
+          "bg": "#1A1F2E",
+          "surface": "#252B3B",
+          "border": "#353B4D",
+          "text": {
+            "primary": "#E8EAF0",
+            "secondary": "#B8BCC8"
+          }
+        }
       },
       borderRadius: {
         "none": "0px",
         "sm": "0.25rem",
         "DEFAULT": "0.375rem",
-        "md": "0.5rem", 
+        "md": "0.5rem",
         "lg": "0.75rem",
         "xl": "1rem",
+        "2xl": "1.25rem",
       },
       boxShadow: {
-        "card": "0 2px 4px rgba(0, 0, 0, 0.05)",
-        "card-hover": "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+        "card": "0 1px 3px rgba(0, 0, 0, 0.08)",
+        "card-hover": "0 4px 12px rgba(0, 0, 0, 0.12)",
+        "soft": "0 2px 8px rgba(107, 122, 153, 0.15)",
       }
     },
   },

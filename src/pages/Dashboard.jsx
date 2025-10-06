@@ -1,7 +1,7 @@
 // src/pages/Dashboard.jsx
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiUsers, FiSearch, FiUserCheck, FiUser, FiArrowRight, FiEdit3, FiBookOpen, FiMail, FiLinkedin, FiUserPlus } from 'react-icons/fi';
+import { FiUsers, FiSearch, FiUserCheck, FiUser, FiArrowRight, FiEdit3, FiBookOpen, FiMail, FiLinkedin, FiUserPlus, FiCalendar, FiBook, FiFile, FiAward } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { mockUsers, mockFollowing } from '../utils/mockData';
 import Navbar from '../components/layout/Navbar';
@@ -60,13 +60,13 @@ export default function Dashboard() {
   }
   
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background dark:bg-dark-bg">
       <Navbar />
-      
-      <main className="flex-1 bg-gray-50 dark:bg-dark-page py-8">
+
+      <main className="flex-1 bg-gray-50 dark:bg-dark-bg py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Enlarged welcome section */}
-          <div className="bg-gradient-to-br from-white to-primary-50 dark:bg-dark-surface rounded-lg shadow-md dark:shadow-none p-8 mb-6 border border-primary-200 dark:border-dark-border">
+          <div className="bg-gradient-to-br from-white to-primary-50 dark:from-dark-surface dark:to-dark-surface rounded-lg shadow-md dark:shadow-none p-8 mb-6 border border-primary-200 dark:border-dark-border">
             <div className="flex flex-col md:flex-row gap-6">
               {/* Avatar with larger size */}
               <div className="flex-shrink-0">
@@ -85,57 +85,57 @@ export default function Dashboard() {
               
               {/* User info */}
               <div className="flex-1">
-                <h1 className="text-3xl font-bold text-primary-800 dark:text-dark-primary mb-2 border-b-2 border-primary-300 pb-2">
+                <h1 className="text-3xl font-bold text-primary-800 dark:text-dark-text-primary mb-2 border-b-2 border-primary-300 dark:border-dark-border pb-2">
                   Welcome back, {user.username}!
                 </h1>
                 
                 <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <h2 className="text-lg font-medium text-primary-700 dark:text-dark-primary">Profile</h2>
+                    <h2 className="text-lg font-medium text-primary-700 dark:text-dark-text-primary">Profile</h2>
                     <ul className="mt-2 space-y-2">
-                      <li className="flex items-center text-gray-700 dark:text-dark-secondary p-2 rounded-md bg-white bg-opacity-60 hover:bg-primary-100 transition-colors duration-200 shadow-sm">
-                        <FiMail className="mr-2 text-primary-600" />
+                      <li className="flex items-center text-gray-700 dark:text-dark-text-secondary p-2 rounded-md bg-white dark:bg-dark-bg bg-opacity-60 hover:bg-primary-100 dark:hover:bg-dark-border transition-colors duration-200 shadow-sm">
+                        <FiMail className="mr-2 text-primary-600 dark:text-primary-400" />
                         {user.email}
                       </li>
-                      <li className="flex items-center text-gray-700 dark:text-dark-secondary p-2 rounded-md bg-white bg-opacity-60 hover:bg-primary-100 transition-colors duration-200 shadow-sm">
-                        <FiBookOpen className="mr-2 text-primary-600" />
-                        {user.major ? user.major : <span className="text-gray-400">Add your major</span>}
+                      <li className="flex items-center text-gray-700 dark:text-dark-text-secondary p-2 rounded-md bg-white dark:bg-dark-bg bg-opacity-60 hover:bg-primary-100 dark:hover:bg-dark-border transition-colors duration-200 shadow-sm">
+                        <FiBookOpen className="mr-2 text-primary-600 dark:text-primary-400" />
+                        {user.major ? user.major : <span className="text-gray-400 dark:text-gray-500">Add your major</span>}
                       </li>
-                      <li className="flex items-center text-gray-700 dark:text-dark-secondary p-2 rounded-md bg-white bg-opacity-60 hover:bg-primary-100 transition-colors duration-200 shadow-sm">
-                        <FiLinkedin className="mr-2 text-primary-600" />
-                        {user.linkedin_url ? 
-                          <a 
-                            href={user.linkedin_url.startsWith('http') ? user.linkedin_url : `https://${user.linkedin_url}`} 
-                            target="_blank" 
+                      <li className="flex items-center text-gray-700 dark:text-dark-text-secondary p-2 rounded-md bg-white dark:bg-dark-bg bg-opacity-60 hover:bg-primary-100 dark:hover:bg-dark-border transition-colors duration-200 shadow-sm">
+                        <FiLinkedin className="mr-2 text-primary-600 dark:text-primary-400" />
+                        {user.linkedin_url ?
+                          <a
+                            href={user.linkedin_url.startsWith('http') ? user.linkedin_url : `https://${user.linkedin_url}`}
+                            target="_blank"
                             rel="noopener noreferrer"
-                            className="text-primary-700 hover:underline font-medium"
+                            className="text-primary-700 dark:text-primary-400 hover:underline font-medium"
                           >
                             LinkedIn Profile
-                          </a> : 
-                          <span className="text-gray-400">Add LinkedIn URL</span>
+                          </a> :
+                          <span className="text-gray-400 dark:text-gray-500">Add LinkedIn URL</span>
                         }
                       </li>
                     </ul>
                   </div>
-                  
+
                   <div>
-                    <h2 className="text-lg font-medium text-primary-700 dark:text-dark-primary mb-2">Your Network</h2>
-                    <div className="flex items-center space-x-3">
-                      <button 
+                    <h2 className="text-lg font-medium text-primary-700 dark:text-dark-text-primary mb-2">Your Network</h2>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                      <button
                         className="bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-md shadow-sm flex items-center justify-center space-x-1.5 transition-colors duration-200"
                         onClick={() => navigate(`/profile/${user.id}/following`)}
                       >
                         <FiUserCheck className="text-base" />
                         <span className="text-sm font-medium whitespace-nowrap">Following ({following.length})</span>
                       </button>
-                      <button 
+                      <button
                         className="bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-md shadow-sm flex items-center justify-center space-x-1.5 transition-colors duration-200"
                         onClick={() => navigate(`/profile/${user.id}/followers`)}
                       >
                         <FiUsers className="text-base" />
                         <span className="text-sm font-medium whitespace-nowrap">Followers ({followers})</span>
                       </button>
-                      <button 
+                      <button
                         className="bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-md shadow-sm flex items-center justify-center space-x-1.5 transition-colors duration-200"
                         onClick={() => alert('Friend request feature coming soon!')}
                       >
@@ -146,14 +146,14 @@ export default function Dashboard() {
                     
                     <div className="mt-4">
                       {user.bio ? (
-                        <div className="bg-white rounded-lg p-3 shadow-sm border border-primary-100">
-                          <h3 className="text-sm font-medium text-primary-700 mb-1">Bio</h3>
-                          <p className="text-gray-700 dark:text-dark-secondary">{user.bio}</p>
+                        <div className="bg-white dark:bg-dark-bg rounded-lg p-3 shadow-sm border border-primary-100 dark:border-dark-border">
+                          <h3 className="text-sm font-medium text-primary-700 dark:text-dark-text-primary mb-1">Bio</h3>
+                          <p className="text-gray-700 dark:text-dark-text-secondary">{user.bio}</p>
                         </div>
                       ) : (
-                        <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
-                          <h3 className="text-sm font-medium text-primary-700 mb-1">Bio</h3>
-                          <p className="text-gray-400 italic text-sm">Add a bio to tell others about yourself</p>
+                        <div className="bg-white dark:bg-dark-bg rounded-lg p-3 shadow-sm border border-gray-200 dark:border-dark-border">
+                          <h3 className="text-sm font-medium text-primary-700 dark:text-dark-text-primary mb-1">Bio</h3>
+                          <p className="text-gray-400 dark:text-gray-500 italic text-sm">Add a bio to tell others about yourself</p>
                         </div>
                       )}
                     </div>
@@ -164,30 +164,142 @@ export default function Dashboard() {
           </div>
           
           {/* Action buttons moved outside the card with consistent styling */}
-          <div className="flex flex-wrap gap-3 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
             <Link
               to="/explore"
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-dark-surface"
+              className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-dark-surface"
             >
-              <FiSearch className="mr-2" /> 
-              <span className="whitespace-nowrap">Explore Students</span>
+              <FiSearch className="mr-2" />
+              <span>Explore Students</span>
             </Link>
             <Link
               to={`/profile/${user.id}`}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-dark-surface"
+              className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-dark-surface"
             >
-              <FiUser className="mr-2" /> 
-              <span className="whitespace-nowrap">View Your Profile</span>
+              <FiUser className="mr-2" />
+              <span>View Your Profile</span>
             </Link>
             <Link
               to="/edit-profile"
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-dark-surface"
+              className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-dark-surface"
             >
-              <FiEdit3 className="mr-2" /> 
-              <span className="whitespace-nowrap">Edit Profile</span>
+              <FiEdit3 className="mr-2" />
+              <span>Edit Profile</span>
             </Link>
           </div>
           
+          {/* Quick Access Features */}
+          <div className="mb-8">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-dark-text-primary mb-4">
+              Quick Access
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <Link
+                to="/study-groups"
+                className="card p-4 sm:p-6 hover:shadow-lg transition-shadow group"
+              >
+                <div className="flex items-center mb-3">
+                  <div className="p-3 bg-primary-100 dark:bg-primary-900/30 rounded-lg group-hover:bg-primary-200 dark:group-hover:bg-primary-800/40 transition-colors">
+                    <FiUsers className="text-primary-600 dark:text-primary-400" size={24} />
+                  </div>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary mb-1">
+                  Study Groups
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-dark-text-secondary">
+                  Join or create study groups with classmates
+                </p>
+              </Link>
+
+              <Link
+                to="/events"
+                className="card p-4 sm:p-6 hover:shadow-lg transition-shadow group"
+              >
+                <div className="flex items-center mb-3">
+                  <div className="p-3 bg-accent-teal/10 dark:bg-accent-teal/20 rounded-lg group-hover:bg-accent-teal/20 dark:group-hover:bg-accent-teal/30 transition-colors">
+                    <FiCalendar className="text-accent-teal" size={24} />
+                  </div>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary mb-1">
+                  Campus Events
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-dark-text-secondary">
+                  Discover and RSVP to campus activities
+                </p>
+              </Link>
+
+              <Link
+                to="/course-reviews"
+                className="card p-4 sm:p-6 hover:shadow-lg transition-shadow group"
+              >
+                <div className="flex items-center mb-3">
+                  <div className="p-3 bg-accent-sage/10 dark:bg-accent-sage/20 rounded-lg group-hover:bg-accent-sage/20 dark:group-hover:bg-accent-sage/30 transition-colors">
+                    <FiBook className="text-accent-sage" size={24} />
+                  </div>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary mb-1">
+                  Course Reviews
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-dark-text-secondary">
+                  Read and share course reviews
+                </p>
+              </Link>
+
+              <Link
+                to="/resources"
+                className="card p-4 sm:p-6 hover:shadow-lg transition-shadow group"
+              >
+                <div className="flex items-center mb-3">
+                  <div className="p-3 bg-accent-peach/10 dark:bg-accent-peach/20 rounded-lg group-hover:bg-accent-peach/20 dark:group-hover:bg-accent-peach/30 transition-colors">
+                    <FiFile className="text-accent-peach" size={24} />
+                  </div>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary mb-1">
+                  Resources
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-dark-text-secondary">
+                  Access and share study materials
+                </p>
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+              <Link
+                to="/mentorship"
+                className="card p-4 sm:p-6 hover:shadow-lg transition-shadow group"
+              >
+                <div className="flex items-center mb-3">
+                  <div className="p-3 bg-accent-lavender/10 dark:bg-accent-lavender/20 rounded-lg group-hover:bg-accent-lavender/20 dark:group-hover:bg-accent-lavender/30 transition-colors">
+                    <FiAward className="text-accent-lavender" size={24} />
+                  </div>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary mb-1">
+                  Mentorship
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-dark-text-secondary">
+                  Connect with mentors or become one
+                </p>
+              </Link>
+
+              <Link
+                to="/explore"
+                className="card p-4 sm:p-6 hover:shadow-lg transition-shadow group"
+              >
+                <div className="flex items-center mb-3">
+                  <div className="p-3 bg-primary-100 dark:bg-primary-900/30 rounded-lg group-hover:bg-primary-200 dark:group-hover:bg-primary-800/40 transition-colors">
+                    <FiSearch className="text-primary-600 dark:text-primary-400" size={24} />
+                  </div>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary mb-1">
+                  Find Classmates
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-dark-text-secondary">
+                  Search by major, interests, and courses
+                </p>
+              </Link>
+            </div>
+          </div>
+
           {/* Complete profile reminder if needed */}
           {(!user.major || !user.bio || !user.linkedin_url) && (
             <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg shadow-sm dark:shadow-none p-6 mb-6 border border-yellow-200 dark:border-yellow-800">
@@ -209,18 +321,18 @@ export default function Dashboard() {
           {/* Suggested connections section */}
           <div className="mb-8">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-dark-primary">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-dark-text-primary">
                 <FiUserCheck className="inline mr-2" />
                 Suggested Connections
               </h2>
-              <Link 
-                to="/explore" 
+              <Link
+                to="/explore"
                 className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm font-medium inline-flex items-center"
               >
                 View All <FiArrowRight className="ml-1" />
               </Link>
             </div>
-            
+
             {suggestedUsers.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {suggestedUsers.map(user => (
@@ -234,8 +346,8 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="bg-white dark:bg-dark-surface rounded-lg shadow-sm dark:shadow-none border border-gray-200 dark:border-dark-border p-8 text-center">
-                <p className="text-gray-500 dark:text-dark-secondary">
-                  {user.major 
+                <p className="text-gray-500 dark:text-dark-text-secondary">
+                  {user.major
                     ? "We don't have any suggestions based on your major yet"
                     : "Add your major to get personalized suggestions"}
                 </p>
@@ -246,18 +358,18 @@ export default function Dashboard() {
           {/* Recent users section */}
           <div>
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-dark-primary">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-dark-text-primary">
                 <FiUsers className="inline mr-2" />
                 Recently Joined
               </h2>
-              <Link 
-                to="/explore" 
+              <Link
+                to="/explore"
                 className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm font-medium inline-flex items-center"
               >
                 View All <FiArrowRight className="ml-1" />
               </Link>
             </div>
-            
+
             {recentUsers.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {recentUsers.map(user => (
@@ -271,7 +383,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="bg-white dark:bg-dark-surface rounded-lg shadow-sm dark:shadow-none border border-gray-200 dark:border-dark-border p-8 text-center">
-                <p className="text-gray-500 dark:text-dark-secondary">
+                <p className="text-gray-500 dark:text-dark-text-secondary">
                   No new users to show at the moment
                 </p>
               </div>

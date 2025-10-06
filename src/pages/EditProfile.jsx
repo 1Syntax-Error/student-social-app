@@ -10,24 +10,28 @@ export default function EditProfile() {
   
   // Show loading state while checking auth
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background dark:bg-dark-bg">
+        <p className="text-gray-600 dark:text-dark-text-secondary">Loading...</p>
+      </div>
+    );
   }
-  
+
   // Redirect if not logged in
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-  
+
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background dark:bg-dark-bg">
       <Navbar />
-      
-      <main className="flex-1 bg-gray-50 py-8">
+
+      <main className="flex-1 bg-gray-50 dark:bg-dark-bg py-8">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <EditProfileForm />
         </div>
       </main>
-      
+
       <Footer />
     </div>
   );

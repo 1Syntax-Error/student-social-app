@@ -53,3 +53,96 @@ export const GENDER_OPTIONS = [
   'Non-binary',
   'Prefer not to say'
 ];
+
+export const SKILLS = [
+  'Python',
+  'JavaScript',
+  'Java',
+  'C++',
+  'React',
+  'Node.js',
+  'Data Analysis',
+  'Machine Learning',
+  'Web Development',
+  'Mobile Development',
+  'UI/UX Design',
+  'Graphic Design',
+  'Video Editing',
+  'Photography',
+  'Writing',
+  'Public Speaking',
+  'Leadership',
+  'Project Management',
+  'Research',
+  'Statistics',
+  'Excel',
+  'SQL',
+  'Git',
+  'Cloud Computing',
+  'Marketing',
+  'Social Media',
+  'Content Creation',
+  'Animation',
+  '3D Modeling',
+  'Music Production'
+];
+
+export const INTERESTS = [
+  'Gaming',
+  'Sports',
+  'Fitness',
+  'Music',
+  'Art',
+  'Photography',
+  'Travel',
+  'Reading',
+  'Movies',
+  'Cooking',
+  'Volunteering',
+  'Entrepreneurship',
+  'Technology',
+  'Science',
+  'Sustainability',
+  'Politics',
+  'Fashion',
+  'Dance',
+  'Theater',
+  'Hiking',
+  'Camping',
+  'Yoga',
+  'Meditation',
+  'Podcasts',
+  'Blogging',
+  'Chess',
+  'Board Games',
+  'Anime',
+  'Comics',
+  'DIY Projects'
+];
+
+export const YEAR_LEVELS = [
+  'Freshman',
+  'Sophomore',
+  'Junior',
+  'Senior',
+  'Graduate Student',
+  'PhD Candidate'
+];
+
+export const COURSES = [
+  'CS 101 - Introduction to Computer Science',
+  'MATH 201 - Calculus II',
+  'PHYS 101 - Physics I',
+  'CHEM 101 - General Chemistry',
+  'BIO 101 - Introduction to Biology',
+  'ECON 101 - Microeconomics',
+  'PSYCH 101 - Introduction to Psychology',
+  'ENG 101 - English Composition',
+  'HIST 101 - World History',
+  'BUS 101 - Introduction to Business',
+  'ART 101 - Introduction to Art',
+  'MUS 101 - Music Theory',
+  'COMM 101 - Public Speaking',
+  'SOC 101 - Introduction to Sociology',
+  'PHIL 101 - Introduction to Philosophy'
+];

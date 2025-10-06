@@ -9,63 +9,63 @@ export default function ProfileHeader({ profile, isFollowing, followers, followi
   const isOwnProfile = user && user.id === profile.id;
   
   return (
-    <div className="card p-6 mb-6">
+    <div className="card p-4 sm:p-6 mb-6">
       <div className="flex flex-col md:flex-row">
         {/* Profile image/avatar */}
         <div className="flex-shrink-0 mb-4 md:mb-0 md:mr-6">
-          <div className={`w-24 h-24 ${colors.card.accent} rounded-full flex items-center justify-center ${colors.text.light}`}>
+          <div className="w-24 h-24 bg-primary-600 dark:bg-primary-500 rounded-full flex items-center justify-center text-white">
             {profile.profile_image_url ? (
-              <img 
-                src={profile.profile_image_url} 
+              <img
+                src={profile.profile_image_url}
                 alt={`${profile.username}'s profile`}
-                className="w-full h-full object-cover rounded-full" 
+                className="w-full h-full object-cover rounded-full"
               />
             ) : (
               <FiUser size={36} />
             )}
           </div>
         </div>
-        
+
         {/* Profile info */}
         <div className="flex-1">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
             <div>
-              <h1 className={`text-2xl font-bold ${colors.text.primary}`}>{profile.username}</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-dark-text-primary">{profile.username}</h1>
               {profile.major && (
-                <p className={`${colors.text.secondary}`}>{profile.major}</p>
+                <p className="text-gray-600 dark:text-dark-text-secondary">{profile.major}</p>
               )}
             </div>
-            
+
             <div className="mt-3 sm:mt-0">
               {isOwnProfile ? (
                 <Link
                   to="/edit-profile"
-                  className={`btn ${colors.sidebar.bg} ${colors.text.light} inline-flex items-center`}
+                  className="btn btn-primary inline-flex items-center"
                 >
                   <FiEdit2 className="mr-2" />
                   Edit Profile
                 </Link>
               ) : (
-                <FollowButton 
-                  userId={profile.id} 
+                <FollowButton
+                  userId={profile.id}
                   isFollowing={isFollowing}
                   onFollowToggle={onFollowToggle}
                 />
               )}
             </div>
           </div>
-          
+
           {profile.bio && (
-            <p className={`${colors.text.secondary} mb-4`}>{profile.bio}</p>
+            <p className="text-gray-600 dark:text-dark-text-secondary mb-4">{profile.bio}</p>
           )}
-          
+
           {/* Follower/Following counts */}
           <div className="flex space-x-4">
-            <div className={`flex items-center ${colors.text.secondary}`}>
+            <div className="flex items-center text-gray-600 dark:text-dark-text-secondary">
               <FiUsers className="mr-1" />
               <span>{followers} Followers</span>
             </div>
-            <div className={`flex items-center ${colors.text.secondary}`}>
+            <div className="flex items-center text-gray-600 dark:text-dark-text-secondary">
               <FiUserCheck className="mr-1" />
               <span>{following} Following</span>
             </div>
