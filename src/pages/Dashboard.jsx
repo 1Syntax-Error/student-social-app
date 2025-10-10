@@ -10,6 +10,7 @@ import UserCard from '../components/social/UserCard';
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [recentUsers, setRecentUsers] = useState([]);
   const [suggestedUsers, setSuggestedUsers] = useState([]);
   const [following, setFollowing] = useState(mockFollowing);
@@ -86,7 +87,7 @@ export default function Dashboard() {
               {/* User info */}
               <div className="flex-1">
                 <h1 className="text-3xl font-bold text-primary-800 dark:text-dark-text-primary mb-2 border-b-2 border-primary-300 dark:border-dark-border pb-2">
-                  Welcome back, {user.username}!
+                  {user.username}
                 </h1>
                 
                 <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -121,23 +122,17 @@ export default function Dashboard() {
                   <div>
                     <h2 className="text-lg font-medium text-primary-700 dark:text-dark-text-primary mb-2">Your Network</h2>
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                      <div className="bg-white dark:bg-dark-bg p-2 rounded-md shadow-sm flex items-center justify-center space-x-1.5 border border-primary-200 dark:border-dark-border">
+                        <FiUserCheck className="text-base text-primary-600 dark:text-primary-400" />
+                        <span className="text-sm font-medium whitespace-nowrap text-gray-700 dark:text-dark-text-primary">Following ({following.length})</span>
+                      </div>
+                      <div className="bg-white dark:bg-dark-bg p-2 rounded-md shadow-sm flex items-center justify-center space-x-1.5 border border-primary-200 dark:border-dark-border">
+                        <FiUsers className="text-base text-primary-600 dark:text-primary-400" />
+                        <span className="text-sm font-medium whitespace-nowrap text-gray-700 dark:text-dark-text-primary">Followers ({followers})</span>
+                      </div>
                       <button
                         className="bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-md shadow-sm flex items-center justify-center space-x-1.5 transition-colors duration-200"
-                        onClick={() => navigate(`/profile/${user.id}/following`)}
-                      >
-                        <FiUserCheck className="text-base" />
-                        <span className="text-sm font-medium whitespace-nowrap">Following ({following.length})</span>
-                      </button>
-                      <button
-                        className="bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-md shadow-sm flex items-center justify-center space-x-1.5 transition-colors duration-200"
-                        onClick={() => navigate(`/profile/${user.id}/followers`)}
-                      >
-                        <FiUsers className="text-base" />
-                        <span className="text-sm font-medium whitespace-nowrap">Followers ({followers})</span>
-                      </button>
-                      <button
-                        className="bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-md shadow-sm flex items-center justify-center space-x-1.5 transition-colors duration-200"
-                        onClick={() => alert('Friend request feature coming soon!')}
+                        onClick={() => navigate('/pending-requests')}
                       >
                         <FiUserPlus className="text-base" />
                         <span className="text-sm font-medium whitespace-nowrap">Pending Request</span>
@@ -265,24 +260,6 @@ export default function Dashboard() {
 
           </div>
 
-          {/* Complete profile reminder if needed */}
-          {(!user.major || !user.bio || !user.linkedin_url) && (
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg shadow-sm dark:shadow-none p-6 mb-6 border border-yellow-200 dark:border-yellow-800">
-              <h2 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200">
-                Complete your profile
-              </h2>
-              <p className="text-yellow-700 dark:text-yellow-300 mt-1 mb-4">
-                A complete profile helps you connect with more students and build your network
-              </p>
-              <Link
-                to="/edit-profile"
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 dark:focus:ring-offset-dark-surface"
-              >
-                Update Profile
-              </Link>
-            </div>
-          )}
-          
           {/* Suggested connections section */}
           <div className="mb-8">
             <div className="flex justify-between items-center mb-4">

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { FiAlertTriangle } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
@@ -58,7 +59,24 @@ export default function Home() {
             </div>
           </div>
         </div>
-        
+
+        {/* Privacy Warning Notice */}
+        <div className="bg-amber-50 dark:bg-amber-900/20 border-y border-amber-200 dark:border-amber-800">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="flex items-start space-x-4">
+              <FiAlertTriangle className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-1" size={24} />
+              <div>
+                <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-200 mb-2">
+                  Important Privacy Notice
+                </h3>
+                <p className="text-amber-800 dark:text-amber-300 leading-relaxed">
+                  For your safety and privacy, <strong>never share sensitive personal information</strong> such as your Social Security number, home address, phone number, financial information, or other private details on your profile or in conversations. Only share information you would be comfortable sharing in a public academic setting.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Features section */}
         <div className="py-16 bg-white dark:bg-dark-surface">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -1,9 +1,21 @@
 // src/services/profileService.js
 import { supabase } from '../utils/supabaseClient';
+import { getCachedUserProfile, cacheUserProfile, sessionCache } from '../utils/cache';
 
 export const profileService = {
-  // Get profile by user ID
-  async getProfile(userId) {
+  // Get profile by user ID with caching
+  async getProfile(userId, useCache = true) {
+    if (useCache) {
+      // Try cache first
+      const cached = getCachedUserProfile(userId);
+      if (cached) {
+        console.log(`Profile cache hit for user ${userId}`);
+        return cached;
+      }
+    }
+
+    // Fetch from database
+    console.log(`Fetching profile from database for user ${userId}`);
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -11,11 +23,27 @@ export const profileService = {
       .single();
 
     if (error) throw error;
+
+    // Cache the result
+    if (data) {
+      cacheUserProfile(userId, data);
+    }
+
     return data;
   },
 
-  // Get all profiles with optional filters
+  // Get all profiles with optional filters (cached in session)
   async getProfiles(filters = {}) {
+    // Create cache key from filters
+    const cacheKey = `profiles_${JSON.stringify(filters)}`;
+
+    // Check session cache for this query
+    const cached = sessionCache.get(cacheKey);
+    if (cached) {
+      console.log('Profiles cache hit for filters:', filters);
+      return cached;
+    }
+
     let query = supabase.from('profiles').select('*');
 
     if (filters.major) {
@@ -31,10 +59,16 @@ export const profileService = {
     const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) throw error;
+
+    // Cache results in session storage (temporary)
+    if (data) {
+      sessionCache.set(cacheKey, data);
+    }
+
     return data;
   },
 
-  // Update profile
+  // Update profile and invalidate cache
   async updateProfile(userId, updates) {
     const { data, error } = await supabase
       .from('profiles')
@@ -44,6 +78,14 @@ export const profileService = {
       .single();
 
     if (error) throw error;
+
+    // Update cache with new data
+    if (data) {
+      cacheUserProfile(userId, data);
+      // Also clear session cache for profile lists
+      sessionCache.clear();
+    }
+
     return data;
   },
 

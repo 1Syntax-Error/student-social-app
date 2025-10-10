@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/authService';
 import { profileService } from '../services/profileService';
 import { supabase } from '../utils/supabaseClient';
+import { localCache, cacheUserProfile, getCachedUserProfile, invalidateUserProfile } from '../utils/cache';
 
 const AuthContext = createContext();
 
@@ -71,9 +72,26 @@ export function AuthProvider({ children }) {
 
   async function loadUserProfile(userId) {
     try {
+      // Try to get from cache first
+      const cachedProfile = getCachedUserProfile(userId);
+      if (cachedProfile) {
+        console.log('Loading profile from cache');
+        setProfile(cachedProfile);
+        setUser({
+          id: userId,
+          ...cachedProfile
+        });
+        return;
+      }
+
+      // If not in cache, fetch from database
+      console.log('Fetching profile from database');
       const profileData = await profileService.getProfile(userId);
+
+      // Cache the profile data
+      cacheUserProfile(userId, profileData);
+
       setProfile(profileData);
-      // Combine auth user with profile for backward compatibility
       setUser({
         id: userId,
         ...profileData
@@ -110,6 +128,15 @@ export function AuthProvider({ children }) {
   const signOut = async () => {
     try {
       await authService.signOut();
+
+      // Clear cached profile data
+      if (user?.id) {
+        invalidateUserProfile(user.id);
+      }
+
+      // Clear all local cache on sign out
+      localCache.clear();
+
       setUser(null);
       setProfile(null);
       return { success: true };
@@ -137,6 +164,10 @@ export function AuthProvider({ children }) {
       });
 
       const updated = await profileService.updateProfile(user.id, sanitizedData);
+
+      // Update cache with new data
+      cacheUserProfile(user.id, updated);
+
       setProfile(updated);
       setUser({ ...user, ...updated });
       return { success: true, data: updated };

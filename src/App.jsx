@@ -16,6 +16,7 @@ import StudyGroups from './pages/StudyGroups';
 import Events from './pages/Events';
 import CourseReviews from './pages/CourseReviews';
 import Resources from './pages/Resources';
+import PendingRequests from './pages/PendingRequests';
 
 // Protected route component
 function ProtectedRoute({ children }) {
@@ -102,6 +103,14 @@ export default function App() {
                   element={
                     <ProtectedRoute>
                       <Resources />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/pending-requests"
+                  element={
+                    <ProtectedRoute>
+                      <PendingRequests />
                     </ProtectedRoute>
                   }
                 />
