@@ -1,12 +1,36 @@
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { FiAlertTriangle } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import { colors } from '../utils/colors';
+import { supabase } from '../utils/supabaseClient';
 
 export default function Home() {
   const { user } = useAuth();
+  const [totalUsers, setTotalUsers] = useState(0);
+
+  // Fetch total user count from profiles table
+  useEffect(() => {
+    async function fetchUserCount() {
+      try {
+        const { count, error } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true });
+
+        if (error) {
+          console.error('Error fetching user count:', error);
+        } else {
+          setTotalUsers(count || 0);
+        }
+      } catch (err) {
+        console.error('Error:', err);
+      }
+    }
+
+    fetchUserCount();
+  }, []);
   
   return (
     <div className="min-h-screen flex flex-col bg-background dark:bg-dark-bg">
@@ -14,7 +38,40 @@ export default function Home() {
 
       <main className="flex-1">
         {/* Hero section */}
-        <div className="bg-gradient-to-br from-primary-600 to-primary-800 dark:from-primary-700 dark:to-primary-900 text-white py-16">
+        <div className="bg-gradient-to-br from-primary-600 to-primary-800 dark:from-primary-700 dark:to-primary-900 text-white py-16 relative">
+          {/* Mechanical Counter - Top Right */}
+          <div className="absolute top-8 right-8 flex flex-col items-center gap-3">
+            <div className="bg-gray-800 p-4 rounded-xl shadow-2xl border border-gray-700">
+              {/* Counter display */}
+              <div className="flex gap-2">
+                {String(totalUsers).padStart(4, '0').split('').map((digit, index) => (
+                  <div
+                    key={index}
+                    className="relative bg-black rounded-md overflow-hidden shadow-inner"
+                    style={{ width: '45px', height: '60px' }}
+                  >
+                    {/* Top shadow for depth */}
+                    <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-black/40 to-transparent pointer-events-none z-10"></div>
+
+                    {/* Middle divider line */}
+                    <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-900 -translate-y-1/2 z-20"></div>
+
+                    {/* Number */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-4xl font-bold text-white" style={{ fontFamily: 'Arial Black, sans-serif' }}>
+                        {digit}
+                      </span>
+                    </div>
+
+                    {/* Bottom reflection */}
+                    <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-white/5 to-transparent pointer-events-none z-10"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="text-xs text-white/90 uppercase tracking-widest font-semibold">Total Users</div>
+          </div>
+
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="lg:flex lg:items-center lg:justify-between">
               <div className="lg:w-1/2">

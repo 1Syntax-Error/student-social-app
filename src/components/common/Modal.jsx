@@ -40,17 +40,17 @@ export default function Modal({ children, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex min-h-screen items-end justify-center p-4 text-center sm:items-center sm:p-0">
+      <div className="flex min-h-screen items-center justify-center p-4">
         {/* Background overlay */}
-        <div 
-          className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" 
+        <div
+          className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
           aria-hidden="true"
         ></div>
-        
+
         {/* Modal panel */}
-        <div 
+        <div
           ref={modalRef}
-          className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl"
+          className="relative z-10"
         >
           {children}
         </div>
