@@ -105,9 +105,7 @@ export default function UserCard({ user, isFollowing, onFollowToggle }) {
                 {/* User details */}
                 <div className="flex-1">
                   <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    {user.firstName && user.lastName ? 
-                      `${user.firstName} ${user.lastName}` : 
-                      user.username}
+                    {user.full_name || user.username}
                   </h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -131,10 +129,10 @@ export default function UserCard({ user, isFollowing, onFollowToggle }) {
                             <span>{user.major}</span>
                           </li>
                         )}
-                        {user.graduationYear && (
+                        {user.graduation_year && (
                           <li className="flex items-center text-gray-700">
                             <FiCalendar className="mr-2 text-primary-600" size={16} />
-                            <span>Graduating {user.graduationYear}</span>
+                            <span>Graduating {user.graduation_year}</span>
                           </li>
                         )}
                         {user.location && (

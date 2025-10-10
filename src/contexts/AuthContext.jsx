@@ -16,8 +16,24 @@ export function AuthProvider({ children }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.id);
+
       if (session?.user) {
-        await loadUserProfile(session.user.id);
+        // Set basic user info immediately
+        setUser({
+          id: session.user.id,
+          email: session.user.email
+        });
+
+        // Try to load profile, but don't block on it
+        loadUserProfile(session.user.id).catch(err => {
+          console.error('Failed to load profile, continuing anyway:', err);
+          // Set user without profile if it fails
+          setUser({
+            id: session.user.id,
+            email: session.user.email
+          });
+        });
       } else {
         setUser(null);
         setProfile(null);
@@ -32,9 +48,19 @@ export function AuthProvider({ children }) {
 
   async function checkUser() {
     try {
+      console.log('Checking for existing session...');
       const session = await authService.getSession();
       if (session?.user) {
-        await loadUserProfile(session.user.id);
+        console.log('Found existing session for user:', session.user.id);
+        setUser({
+          id: session.user.id,
+          email: session.user.email
+        });
+        loadUserProfile(session.user.id).catch(err => {
+          console.error('Failed to load profile on mount, continuing anyway:', err);
+        });
+      } else {
+        console.log('No existing session found');
       }
     } catch (error) {
       console.error('Error checking user:', error);
@@ -59,38 +85,30 @@ export function AuthProvider({ children }) {
 
   const signIn = async (email, password) => {
     try {
-      setLoading(true);
+      console.log('Attempting sign in...');
       const { user: authUser } = await authService.signIn(email, password);
-      await loadUserProfile(authUser.id);
+      console.log('Sign in successful, user:', authUser?.id);
+      // User state will be set by onAuthStateChange listener
       return { success: true };
     } catch (error) {
       console.error('Sign in error:', error);
       return { success: false, error: error.message };
-    } finally {
-      setLoading(false);
     }
   };
 
   const signUp = async (email, password, userData = {}) => {
     try {
-      setLoading(true);
       const { user: authUser } = await authService.signUp(email, password, userData);
-      // Profile is created automatically via trigger
-      if (authUser) {
-        await loadUserProfile(authUser.id);
-      }
+      // User state will be set by onAuthStateChange listener
       return { success: true };
     } catch (error) {
       console.error('Sign up error:', error);
       return { success: false, error: error.message };
-    } finally {
-      setLoading(false);
     }
   };
 
   const signOut = async () => {
     try {
-      setLoading(true);
       await authService.signOut();
       setUser(null);
       setProfile(null);
@@ -98,23 +116,33 @@ export function AuthProvider({ children }) {
     } catch (error) {
       console.error('Sign out error:', error);
       return { success: false, error: error.message };
-    } finally {
-      setLoading(false);
     }
   };
 
   const updateProfile = async (profileData) => {
     try {
-      setLoading(true);
-      const updated = await profileService.updateProfile(user.id, profileData);
+      // Sanitize data: convert empty strings to null for integer fields
+      const sanitizedData = { ...profileData };
+
+      // Handle integer fields - convert empty strings to null
+      if (sanitizedData.graduation_year === '') {
+        sanitizedData.graduation_year = null;
+      }
+
+      // Remove undefined/null values to avoid overwriting with empty data
+      Object.keys(sanitizedData).forEach(key => {
+        if (sanitizedData[key] === undefined) {
+          delete sanitizedData[key];
+        }
+      });
+
+      const updated = await profileService.updateProfile(user.id, sanitizedData);
       setProfile(updated);
       setUser({ ...user, ...updated });
       return { success: true, data: updated };
     } catch (error) {
       console.error('Update profile error:', error);
       return { success: false, error: error.message };
-    } finally {
-      setLoading(false);
     }
   };
 

@@ -13,12 +13,11 @@ export default function EditProfileForm() {
   const graduationYears = Array.from({ length: 10 }, (_, i) => currentYear + i);
   
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+    full_name: '',
     username: '',
     university: '',
     major: '',
-    graduationYear: '',
+    graduation_year: '',
     gender: '',
     birthDate: '',
     bio: '',
@@ -38,12 +37,11 @@ export default function EditProfileForm() {
   useEffect(() => {
     if (profile) {
       setFormData({
-        firstName: profile.firstName || '',
-        lastName: profile.lastName || '',
+        full_name: profile.full_name || '',
         username: profile.username || '',
         university: profile.university || '',
         major: profile.major || '',
-        graduationYear: profile.graduationYear || '',
+        graduation_year: profile.graduation_year || '',
         gender: profile.gender || '',
         birthDate: profile.birthDate || '',
         bio: profile.bio || '',
@@ -51,7 +49,7 @@ export default function EditProfileForm() {
         linkedin_url: profile.linkedin_url || '',
         other_socials: profile.other_socials || {}
       });
-      
+
       // Convert other_socials object to array for easier management in form
       setSocialLinks(
         Object.entries(profile.other_socials || {}).map(([platform, url]) => ({
@@ -130,47 +128,24 @@ export default function EditProfileForm() {
 
   const renderPersonalInfoSection = () => (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* First Name */}
-        <div>
-          <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-1">
-            First Name
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <FiUser className="text-gray-400 dark:text-gray-500" />
-            </div>
-            <input
-              type="text"
-              id="firstName"
-              name="firstName"
-              value={formData.firstName}
-              onChange={handleChange}
-              className="input pl-10"
-              placeholder="Your first name"
-            />
+      {/* Full Name */}
+      <div>
+        <label htmlFor="full_name" className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-1">
+          Full Name
+        </label>
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <FiUser className="text-gray-400 dark:text-gray-500" />
           </div>
-        </div>
-
-        {/* Last Name */}
-        <div>
-          <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-1">
-            Last Name
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <FiUser className="text-gray-400 dark:text-gray-500" />
-            </div>
-            <input
-              type="text"
-              id="lastName"
-              name="lastName"
-              value={formData.lastName}
-              onChange={handleChange}
-              className="input pl-10"
-              placeholder="Your last name"
-            />
-          </div>
+          <input
+            type="text"
+            id="full_name"
+            name="full_name"
+            value={formData.full_name}
+            onChange={handleChange}
+            className="input pl-10"
+            placeholder="Your full name"
+          />
         </div>
       </div>
 
@@ -327,13 +302,13 @@ export default function EditProfileForm() {
 
       {/* Graduation Year */}
       <div>
-        <label htmlFor="graduationYear" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="graduation_year" className="block text-sm font-medium text-gray-700 mb-1">
           Expected Graduation Year
         </label>
         <select
-          id="graduationYear"
-          name="graduationYear"
-          value={formData.graduationYear}
+          id="graduation_year"
+          name="graduation_year"
+          value={formData.graduation_year}
           onChange={handleChange}
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
         >

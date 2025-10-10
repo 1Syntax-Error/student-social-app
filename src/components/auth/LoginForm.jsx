@@ -8,74 +8,47 @@ export default function LoginForm() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [magicLinkSent, setMagicLinkSent] = useState(false);
-  const [useMagicLink, setUseMagicLink] = useState(false);
-  
-  const navigate = useNavigate();
-  const { signIn, signInWithMagicLink } = useAuth();
 
-  const handleEmailPassword = async (e) => {
+  const navigate = useNavigate();
+  const { signIn } = useAuth();
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!email) {
       setError('Email is required');
       return;
     }
-    
-    if (!useMagicLink && !password) {
+
+    if (!password) {
       setError('Password is required');
       return;
     }
-    
+
+    console.log('LoginForm: Starting login process...');
     setLoading(true);
     setError('');
-    
+
     try {
-      if (useMagicLink) {
-        const { success, error } = await signInWithMagicLink(email);
-        
-        if (success) {
-          setMagicLinkSent(true);
-        } else {
-          setError(error || 'Failed to send magic link');
-        }
+      console.log('LoginForm: Calling signIn...');
+      const { success, error } = await signIn(email, password);
+      console.log('LoginForm: signIn result:', { success, error });
+
+      if (success) {
+        console.log('LoginForm: Login successful, navigating to dashboard...');
+        navigate('/dashboard');
       } else {
-        const { success, error } = await signIn(email, password);
-        
-        if (success) {
-          navigate('/dashboard');
-        } else {
-          setError(error || 'Failed to sign in');
-        }
+        console.log('LoginForm: Login failed:', error);
+        setError(error || 'Failed to sign in');
       }
     } catch (err) {
+      console.error('LoginForm: Unexpected error:', err);
       setError('An unexpected error occurred');
-      console.error(err);
     } finally {
+      console.log('LoginForm: Setting loading to false');
       setLoading(false);
     }
   };
-
-  const toggleAuthMethod = () => {
-    setUseMagicLink(!useMagicLink);
-    setError('');
-  };
-
-  if (magicLinkSent) {
-    return (
-      <div className="card p-8 w-full max-w-md mx-auto">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-text-primary mb-2">Check your email</h2>
-          <p className="text-text-secondary mb-6">
-            We've sent a magic link to <span className="font-medium">{email}</span>
-          </p>
-          <p className="text-sm text-text-muted">
-            Click the link in the email to sign in to your account.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="card p-8 w-full max-w-md mx-auto">
@@ -90,8 +63,8 @@ export default function LoginForm() {
           {error}
         </div>
       )}
-      
-      <form onSubmit={handleEmailPassword} className="space-y-6">
+
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-text-secondary mb-1">
             Email
@@ -107,31 +80,31 @@ export default function LoginForm() {
               onChange={(e) => setEmail(e.target.value)}
               className="input pl-10"
               placeholder="you@university.edu"
+              required
             />
           </div>
         </div>
-        
-        {!useMagicLink && (
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-text-secondary mb-1">
-              Password
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FiLock className="text-text-muted" />
-              </div>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="input pl-10"
-                placeholder="••••••••"
-              />
+
+        <div>
+          <label htmlFor="password" className="block text-sm font-medium text-text-secondary mb-1">
+            Password
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <FiLock className="text-text-muted" />
             </div>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="input pl-10"
+              placeholder="••••••••"
+              required
+            />
           </div>
-        )}
-        
+        </div>
+
         <div>
           <button
             type="submit"
@@ -143,21 +116,12 @@ export default function LoginForm() {
             ) : (
               <>
                 <FiLogIn />
-                {useMagicLink ? 'Send Magic Link' : 'Sign In'}
+                Sign In
               </>
             )}
           </button>
         </div>
       </form>
-      
-      <div className="mt-4 text-center">
-        <button
-          onClick={toggleAuthMethod}
-          className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-        >
-          {useMagicLink ? 'Use Password Instead' : 'Use Magic Link Instead'}
-        </button>
-      </div>
       
       <div className="mt-6 text-center">
         <p className="text-sm text-text-secondary">

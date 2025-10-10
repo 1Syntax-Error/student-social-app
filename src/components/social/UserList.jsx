@@ -23,11 +23,11 @@ export default function UserList({ filter = {}, searchTerm = '', maxUsers = 12 }
         if (user) {
           const { data: followingData } = await supabase
             .from('follows')
-            .select('followed_id')
+            .select('following_id')
             .eq('follower_id', user.id);
-            
+
           if (followingData) {
-            followingIds = followingData.map(f => f.followed_id);
+            followingIds = followingData.map(f => f.following_id);
             setFollowing(followingIds);
           }
         }

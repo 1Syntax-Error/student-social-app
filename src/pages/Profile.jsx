@@ -45,18 +45,18 @@ export default function Profile() {
             .from('follows')
             .select('*')
             .eq('follower_id', user.id)
-            .eq('followed_id', id)
+            .eq('following_id', id)
             .single();
-            
+
           setIsFollowing(!!followData);
         }
-        
+
         // Get follower count
         const { count: followers } = await supabase
           .from('follows')
           .select('*', { count: 'exact', head: true })
-          .eq('followed_id', id);
-          
+          .eq('following_id', id);
+
         setFollowerCount(followers || 0);
         
         // Get following count
@@ -80,7 +80,7 @@ export default function Profile() {
   const handleFollowToggle = async () => {
     if (!user) return;
     if (user.id === id) return; // Can't follow yourself
-    
+
     try {
       if (isFollowing) {
         // Unfollow
@@ -88,20 +88,20 @@ export default function Profile() {
           .from('follows')
           .delete()
           .eq('follower_id', user.id)
-          .eq('followed_id', id);
-          
+          .eq('following_id', id);
+
         setFollowerCount(prev => Math.max(0, prev - 1));
       } else {
         // Follow
         await supabase
           .from('follows')
           .insert([
-            { follower_id: user.id, followed_id: id }
+            { follower_id: user.id, following_id: id }
           ]);
-          
+
         setFollowerCount(prev => prev + 1);
       }
-      
+
       setIsFollowing(!isFollowing);
     } catch (error) {
       console.error('Error toggling follow:', error);
