@@ -1,92 +1,61 @@
-import { useState } from 'react';
-import { FiStar, FiThumbsUp, FiMessageSquare, FiBook, FiFilter } from 'react-icons/fi';
+import { useState, useEffect } from 'react';
+import { FiStar, FiThumbsUp, FiMessageSquare, FiBook, FiFilter, FiLoader } from 'react-icons/fi';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../utils/supabaseClient';
 import { COURSES } from '../utils/constants';
-
-const mockReviews = [
-  {
-    id: 1,
-    course: 'CS 101 - Introduction to Computer Science',
-    professor: 'Dr. Sarah Mitchell',
-    rating: 5,
-    difficulty: 3,
-    workload: 'Moderate',
-    semester: 'Fall 2024',
-    review: 'Excellent introduction to programming! Dr. Mitchell explains concepts clearly and the projects are really interesting.',
-    helpful: 45,
-    author: 'Anonymous',
-    date: '2025-01-15'
-  },
-  {
-    id: 2,
-    course: 'MATH 201 - Calculus II',
-    professor: 'Prof. James Chen',
-    rating: 4,
-    difficulty: 4,
-    workload: 'Heavy',
-    semester: 'Fall 2024',
-    review: 'Challenging but rewarding. Prof. Chen holds great office hours. Make sure to do all the practice problems!',
-    helpful: 32,
-    author: 'Anonymous',
-    date: '2025-01-10'
-  },
-  {
-    id: 3,
-    course: 'PSYCH 101 - Introduction to Psychology',
-    professor: 'Dr. Emily Rodriguez',
-    rating: 5,
-    difficulty: 2,
-    workload: 'Light',
-    semester: 'Fall 2024',
-    review: 'Fascinating course with engaging lectures. Dr. Rodriguez is passionate about the subject and it shows.',
-    helpful: 56,
-    author: 'Anonymous',
-    date: '2025-01-12'
-  },
-  {
-    id: 4,
-    course: 'PHYS 101 - Physics I',
-    professor: 'Prof. Michael Thompson',
-    rating: 3,
-    difficulty: 5,
-    workload: 'Very Heavy',
-    semester: 'Fall 2024',
-    review: 'Very difficult course. The exams are tough but the curve helps. Go to study sessions!',
-    helpful: 28,
-    author: 'Anonymous',
-    date: '2025-01-08'
-  },
-  {
-    id: 5,
-    course: 'ENG 101 - English Composition',
-    professor: 'Dr. Amanda Williams',
-    rating: 4,
-    difficulty: 2,
-    workload: 'Moderate',
-    semester: 'Fall 2024',
-    review: 'Great class for improving writing skills. Dr. Williams provides detailed feedback on all assignments.',
-    helpful: 40,
-    author: 'Anonymous',
-    date: '2025-01-14'
-  }
-];
 
 export default function CourseReviews() {
   const { user } = useAuth();
   const [selectedCourse, setSelectedCourse] = useState('');
-  const [sortBy, setSortBy] = useState('recent'); // 'recent', 'helpful', 'rating'
+  const [sortBy, setSortBy] = useState('recent');
   const [showWriteReview, setShowWriteReview] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredReviews = mockReviews.filter(review => {
-    return !selectedCourse || review.course === selectedCourse;
+  useEffect(() => {
+    fetchReviews();
+  }, [user]);
+
+  const fetchReviews = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const { data: reviewsData, error } = await supabase
+        .from('course_reviews')
+        .select(`
+          *,
+          author:profiles!course_reviews_user_id_fkey(username),
+          votes:review_votes(count)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setReviews(reviewsData || []);
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredReviews = reviews.filter(review => {
+    const courseFull = review.course_code && review.course_name ?
+      `${review.course_code} - ${review.course_name}` : review.course_code || review.course_name || '';
+    return !selectedCourse || courseFull === selectedCourse;
   });
 
   const sortedReviews = [...filteredReviews].sort((a, b) => {
-    if (sortBy === 'helpful') return b.helpful - a.helpful;
-    if (sortBy === 'rating') return b.rating - a.rating;
-    return new Date(b.date) - new Date(a.date);
+    if (sortBy === 'helpful') {
+      const aVotes = a.votes?.[0]?.count || 0;
+      const bVotes = b.votes?.[0]?.count || 0;
+      return bVotes - aVotes;
+    }
+    if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
+    return new Date(b.created_at) - new Date(a.created_at);
   });
 
   const renderStars = (rating) => {
@@ -166,57 +135,82 @@ export default function CourseReviews() {
           </div>
 
           {/* Reviews List */}
-          <div className="space-y-4 sm:space-y-6">
-            {sortedReviews.map(review => (
-              <div key={review.id} className="card p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-                  {/* Rating Box */}
-                  <div className="flex-shrink-0 bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4 text-center md:w-32">
-                    <div className="text-3xl font-bold text-primary-600 dark:text-primary-400">
-                      {review.rating.toFixed(1)}
-                    </div>
-                    <div className="mt-1">
-                      {renderStars(review.rating)}
-                    </div>
-                    <div className={`text-sm font-semibold mt-2 ${getDifficultyColor(review.difficulty)}`}>
-                      Difficulty: {review.difficulty}/5
-                    </div>
-                  </div>
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <FiLoader size={32} className="text-primary-500 dark:text-primary-400 animate-spin" />
+            </div>
+          ) : (
+            <div className="space-y-4 sm:space-y-6">
+              {sortedReviews.map(review => {
+                const courseFull = review.course_code && review.course_name ?
+                  `${review.course_code} - ${review.course_name}` : review.course_code || review.course_name || 'Unknown Course';
+                const voteCount = review.votes?.[0]?.count || 0;
+                const semesterYear = review.semester && review.year ? `${review.semester} ${review.year}` : review.semester || review.year || '';
 
-                  {/* Review Content */}
-                  <div className="flex-1">
-                    <div className="mb-3">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary">
-                        {review.course}
-                      </h3>
-                      <p className="text-sm text-gray-600 dark:text-dark-text-secondary">
-                        {review.professor} • {review.semester} • Workload: {review.workload}
-                      </p>
-                    </div>
-
-                    <p className="text-gray-700 dark:text-dark-text-secondary mb-4">
-                      {review.review}
-                    </p>
-
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-4">
-                        <button className="flex items-center gap-1 text-gray-600 dark:text-dark-text-secondary hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
-                          <FiThumbsUp size={16} />
-                          <span>{review.helpful} helpful</span>
-                        </button>
-                        <span className="text-gray-400 dark:text-dark-text-secondary">
-                          by {review.author}
-                        </span>
+                return (
+                  <div key={review.id} className="card p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                      {/* Rating Box */}
+                      <div className="flex-shrink-0 bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4 text-center md:w-32">
+                        {review.rating && (
+                          <>
+                            <div className="text-3xl font-bold text-primary-600 dark:text-primary-400">
+                              {review.rating.toFixed(1)}
+                            </div>
+                            <div className="mt-1">
+                              {renderStars(review.rating)}
+                            </div>
+                          </>
+                        )}
+                        {review.difficulty && (
+                          <div className={`text-sm font-semibold mt-2 ${getDifficultyColor(review.difficulty)}`}>
+                            Difficulty: {review.difficulty}/5
+                          </div>
+                        )}
                       </div>
-                      <span className="text-gray-400 dark:text-dark-text-secondary">
-                        {new Date(review.date).toLocaleDateString()}
-                      </span>
+
+                      {/* Review Content */}
+                      <div className="flex-1">
+                        <div className="mb-3">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary">
+                            {courseFull}
+                          </h3>
+                          <p className="text-sm text-gray-600 dark:text-dark-text-secondary">
+                            {review.professor_name && `${review.professor_name} • `}
+                            {semesterYear}
+                            {review.workload && ` • Workload: ${review.workload}`}
+                          </p>
+                        </div>
+
+                        {review.review_text && (
+                          <p className="text-gray-700 dark:text-dark-text-secondary mb-4">
+                            {review.review_text}
+                          </p>
+                        )}
+
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-4">
+                            <button className="flex items-center gap-1 text-gray-600 dark:text-dark-text-secondary hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                              <FiThumbsUp size={16} />
+                              <span>{voteCount} helpful</span>
+                            </button>
+                            {review.author && (
+                              <span className="text-gray-400 dark:text-dark-text-secondary">
+                                by {review.author.username}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-gray-400 dark:text-dark-text-secondary">
+                            {new Date(review.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
 
           {sortedReviews.length === 0 && (
             <div className="card p-12 text-center">

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { FiUserPlus, FiCheck, FiX, FiInbox } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../utils/supabaseClient';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 
@@ -16,37 +17,84 @@ export default function PendingRequests() {
 
       setLoading(true);
 
-      // Simulate API call - replace with actual API call later
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      try {
+        // Fetch pending friend requests where current user is the receiver
+        const { data: requests, error } = await supabase
+          .from('friend_requests')
+          .select(`
+            id,
+            sender_id,
+            created_at,
+            sender:profiles!friend_requests_sender_id_fkey (
+              id,
+              username,
+              full_name,
+              major,
+              university,
+              profile_image_url
+            )
+          `)
+          .eq('receiver_id', user.id)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false });
 
-      // Mock pending requests data
-      const mockRequests = [
-        // {
-        //   id: 1,
-        //   username: 'john_doe',
-        //   full_name: 'John Doe',
-        //   major: 'Computer Science',
-        //   university: 'MIT',
-        //   profile_image_url: null,
-        //   requestedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-        // }
-      ];
+        if (error) throw error;
 
-      setPendingRequests(mockRequests);
-      setLoading(false);
+        // Transform the data to match the expected format
+        const formattedRequests = (requests || []).map(request => ({
+          id: request.id,
+          username: request.sender.username,
+          full_name: request.sender.full_name,
+          major: request.sender.major,
+          university: request.sender.university,
+          profile_image_url: request.sender.profile_image_url,
+          requestedAt: request.created_at,
+          senderId: request.sender_id
+        }));
+
+        setPendingRequests(formattedRequests);
+      } catch (error) {
+        console.error('Error fetching pending requests:', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchPendingRequests();
   }, [user]);
 
   const handleAcceptRequest = async (requestId) => {
-    // TODO: Implement accept friend request API call
-    setPendingRequests(pendingRequests.filter(req => req.id !== requestId));
+    try {
+      // Update the friend request status to 'accepted'
+      const { error } = await supabase
+        .from('friend_requests')
+        .update({ status: 'accepted' })
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      // Remove from UI
+      setPendingRequests(pendingRequests.filter(req => req.id !== requestId));
+    } catch (error) {
+      console.error('Error accepting friend request:', error);
+    }
   };
 
   const handleDeclineRequest = async (requestId) => {
-    // TODO: Implement decline friend request API call
-    setPendingRequests(pendingRequests.filter(req => req.id !== requestId));
+    try {
+      // Update the friend request status to 'declined'
+      const { error } = await supabase
+        .from('friend_requests')
+        .update({ status: 'declined' })
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      // Remove from UI
+      setPendingRequests(pendingRequests.filter(req => req.id !== requestId));
+    } catch (error) {
+      console.error('Error declining friend request:', error);
+    }
   };
 
   const formatTimeAgo = (dateString) => {

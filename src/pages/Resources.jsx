@@ -1,78 +1,10 @@
-import { useState } from 'react';
-import { FiFile, FiDownload, FiUpload, FiSearch, FiFilter, FiFolder, FiFileText, FiImage } from 'react-icons/fi';
+import { useState, useEffect } from 'react';
+import { FiFile, FiDownload, FiUpload, FiSearch, FiFilter, FiFolder, FiFileText, FiImage, FiLoader } from 'react-icons/fi';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../utils/supabaseClient';
 import { COURSES } from '../utils/constants';
-
-const mockResources = [
-  {
-    id: 1,
-    title: 'Calculus II Midterm Study Guide',
-    course: 'MATH 201 - Calculus II',
-    type: 'PDF',
-    size: '2.4 MB',
-    downloads: 156,
-    uploadedBy: 'Sarah Johnson',
-    date: '2025-01-15',
-    description: 'Comprehensive study guide covering chapters 1-5'
-  },
-  {
-    id: 2,
-    title: 'CS 101 Final Project Sample',
-    course: 'CS 101 - Introduction to Computer Science',
-    type: 'ZIP',
-    size: '5.8 MB',
-    downloads: 89,
-    uploadedBy: 'Mike Chen',
-    date: '2025-01-12',
-    description: 'Example final project with full source code and documentation'
-  },
-  {
-    id: 3,
-    title: 'Psychology Research Paper Template',
-    course: 'PSYCH 101 - Introduction to Psychology',
-    type: 'DOCX',
-    size: '125 KB',
-    downloads: 234,
-    uploadedBy: 'Emma Davis',
-    date: '2025-01-10',
-    description: 'APA format template for psychology research papers'
-  },
-  {
-    id: 4,
-    title: 'Physics I Formula Sheet',
-    course: 'PHYS 101 - Physics I',
-    type: 'PDF',
-    size: '1.2 MB',
-    downloads: 312,
-    uploadedBy: 'Alex Turner',
-    date: '2025-01-08',
-    description: 'All important formulas and constants for Physics I'
-  },
-  {
-    id: 5,
-    title: 'English Composition Essay Examples',
-    course: 'ENG 101 - English Composition',
-    type: 'PDF',
-    size: '3.1 MB',
-    downloads: 178,
-    uploadedBy: 'Lisa Brown',
-    date: '2025-01-14',
-    description: 'Collection of A-grade essays with professor feedback'
-  },
-  {
-    id: 6,
-    title: 'Chemistry Lab Report Template',
-    course: 'CHEM 101 - General Chemistry',
-    type: 'DOCX',
-    size: '280 KB',
-    downloads: 145,
-    uploadedBy: 'David Kim',
-    date: '2025-01-11',
-    description: 'Standard lab report format with examples'
-  }
-];
 
 export default function Resources() {
   const { user } = useAuth();
@@ -80,14 +12,44 @@ export default function Resources() {
   const [selectedCourse, setSelectedCourse] = useState('');
   const [selectedType, setSelectedType] = useState('');
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [resources, setResources] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const fileTypes = ['All', 'PDF', 'DOCX', 'ZIP', 'PPTX', 'Image'];
+  const fileTypes = ['All', 'Study Guide', 'Notes', 'Past Exam', 'Tutorial', 'Other'];
 
-  const filteredResources = mockResources.filter(resource => {
+  useEffect(() => {
+    fetchResources();
+  }, [user]);
+
+  const fetchResources = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const { data: resourcesData, error } = await supabase
+        .from('resources')
+        .select(`
+          *,
+          uploader:profiles!resources_uploader_id_fkey(username)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setResources(resourcesData || []);
+    } catch (error) {
+      console.error('Error fetching resources:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredResources = resources.filter(resource => {
     const matchesSearch = resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         resource.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCourse = !selectedCourse || resource.course === selectedCourse;
-    const matchesType = !selectedType || selectedType === 'All' || resource.type === selectedType;
+                         (resource.description && resource.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    const courseFull = resource.course_code ? resource.course_code : '';
+    const matchesCourse = !selectedCourse || courseFull === selectedCourse.split(' - ')[0];
+    const matchesType = !selectedType || selectedType === 'All' || resource.resource_type === selectedType;
     return matchesSearch && matchesCourse && matchesType;
   });
 

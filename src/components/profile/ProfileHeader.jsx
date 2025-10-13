@@ -1,13 +1,13 @@
 import { Link } from 'react-router-dom';
-import { FiEdit2, FiUser, FiUsers, FiUserCheck } from 'react-icons/fi';
+import { FiEdit2, FiUser, FiUsers } from 'react-icons/fi';
 import { useAuth } from '../../contexts/AuthContext';
 import FollowButton from '../social/FollowButton';
 import { colors } from '../../utils/colors';
 
-export default function ProfileHeader({ profile, isFollowing, followers, following, onFollowToggle }) {
+export default function ProfileHeader({ profile, isFriend, friendCount, onFollowToggle }) {
   const { user } = useAuth();
   const isOwnProfile = user && user.id === profile.id;
-  
+
   return (
     <div className="card p-4 sm:p-6 mb-6">
       <div className="flex flex-col md:flex-row">
@@ -48,7 +48,7 @@ export default function ProfileHeader({ profile, isFollowing, followers, followi
               ) : (
                 <FollowButton
                   userId={profile.id}
-                  isFollowing={isFollowing}
+                  isFollowing={isFriend}
                   onFollowToggle={onFollowToggle}
                 />
               )}
@@ -59,16 +59,15 @@ export default function ProfileHeader({ profile, isFollowing, followers, followi
             <p className="text-gray-600 dark:text-dark-text-secondary mb-4">{profile.bio}</p>
           )}
 
-          {/* Follower/Following counts */}
+          {/* Friends count - clickable */}
           <div className="flex space-x-4">
-            <div className="flex items-center text-gray-600 dark:text-dark-text-secondary">
-              <FiUsers className="mr-1" />
-              <span>{followers} Followers</span>
-            </div>
-            <div className="flex items-center text-gray-600 dark:text-dark-text-secondary">
-              <FiUserCheck className="mr-1" />
-              <span>{following} Following</span>
-            </div>
+            <Link
+              to={`/friends/${profile.id}`}
+              className="flex items-center text-gray-600 dark:text-dark-text-secondary hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-200 group"
+            >
+              <FiUsers className="mr-1 group-hover:scale-110 transition-transform duration-200" />
+              <span className="font-medium">{friendCount} {friendCount === 1 ? 'Friend' : 'Friends'}</span>
+            </Link>
           </div>
         </div>
       </div>

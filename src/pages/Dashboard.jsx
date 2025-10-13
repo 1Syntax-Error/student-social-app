@@ -1,9 +1,10 @@
 // src/pages/Dashboard.jsx
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiUsers, FiSearch, FiUserCheck, FiUser, FiArrowRight, FiEdit3, FiBookOpen, FiMail, FiLinkedin, FiUserPlus, FiCalendar, FiBook, FiFile, FiAward } from 'react-icons/fi';
+import { FiUsers, FiSearch, FiUser, FiArrowRight, FiEdit3, FiBookOpen, FiMail, FiLinkedin, FiUserPlus, FiCalendar, FiBook, FiFile, FiAward } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
-import { mockUsers, mockFollowing } from '../utils/mockData';
+import { mockUsers } from '../utils/mockData';
+import { supabase } from '../utils/supabaseClient';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import UserCard from '../components/social/UserCard';
@@ -13,45 +14,62 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [recentUsers, setRecentUsers] = useState([]);
   const [suggestedUsers, setSuggestedUsers] = useState([]);
-  const [following, setFollowing] = useState(mockFollowing);
-  const [followers, setFollowers] = useState(2); // Mock value
+  const [friends, setFriends] = useState([]);
+  const [friendCount, setFriendCount] = useState(0);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
     const fetchDashboardData = async () => {
       if (!user) return;
-      
+
       setLoading(true);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Filter users to exclude current user and those already followed
-      const filteredUsers = mockUsers.filter(
-        u => u.id !== user.id && !mockFollowing.includes(u.id)
-      );
-      
-      // Get "recent" users (just a subset of mock users)
-      setRecentUsers(filteredUsers.slice(0, 2));
-      
-      // Get "suggested" users (users with same major as current user)
-      const suggestedByMajor = filteredUsers.filter(
-        u => u.major === user.major
-      ).slice(0, 2);
-      
-      setSuggestedUsers(suggestedByMajor);
-      setLoading(false);
+
+      try {
+        // Fetch current user's friends
+        const { data: friendsData } = await supabase
+          .from('follows')
+          .select('following_id')
+          .eq('follower_id', user.id);
+
+        const friendIds = friendsData ? friendsData.map(f => f.following_id) : [];
+        setFriends(friendIds);
+        setFriendCount(friendIds.length);
+
+        // Simulate API call for mock data
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Filter users to exclude current user and friends
+        const filteredUsers = mockUsers.filter(
+          u => u.id !== user.id && !friendIds.includes(u.id)
+        );
+
+        // Get "recent" users (just a subset of mock users)
+        setRecentUsers(filteredUsers.slice(0, 2));
+
+        // Get "suggested" users (users with same major as current user)
+        const suggestedByMajor = filteredUsers.filter(
+          u => u.major === user.major
+        ).slice(0, 2);
+
+        setSuggestedUsers(suggestedByMajor);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
     };
-    
+
     fetchDashboardData();
   }, [user]);
   
   const handleFollowToggle = async (userId) => {
     // Update local state optimistically
-    if (following.includes(userId)) {
-      setFollowing(following.filter(id => id !== userId));
+    if (friends.includes(userId)) {
+      setFriends(friends.filter(id => id !== userId));
+      setFriendCount(prev => Math.max(0, prev - 1));
     } else {
-      setFollowing([...following, userId]);
+      setFriends([...friends, userId]);
+      setFriendCount(prev => prev + 1);
     }
   };
   
@@ -122,20 +140,21 @@ export default function Dashboard() {
                   <div>
                     <h2 className="text-lg font-medium text-primary-700 dark:text-dark-text-primary mb-2">Your Network</h2>
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                      <div className="bg-white dark:bg-dark-bg p-2 rounded-md shadow-sm flex items-center justify-center space-x-1.5 border border-primary-200 dark:border-dark-border">
-                        <FiUserCheck className="text-base text-primary-600 dark:text-primary-400" />
-                        <span className="text-sm font-medium whitespace-nowrap text-gray-700 dark:text-dark-text-primary">Following ({following.length})</span>
-                      </div>
-                      <div className="bg-white dark:bg-dark-bg p-2 rounded-md shadow-sm flex items-center justify-center space-x-1.5 border border-primary-200 dark:border-dark-border">
+                      <Link
+                        to={`/friends/${user.id}`}
+                        className="bg-white dark:bg-dark-bg p-2 rounded-md shadow-sm flex items-center justify-center space-x-1.5 border border-primary-200 dark:border-dark-border hover:bg-primary-50 dark:hover:bg-dark-border transition-colors duration-200 cursor-pointer"
+                      >
                         <FiUsers className="text-base text-primary-600 dark:text-primary-400" />
-                        <span className="text-sm font-medium whitespace-nowrap text-gray-700 dark:text-dark-text-primary">Followers ({followers})</span>
-                      </div>
+                        <span className="text-sm font-medium whitespace-nowrap text-gray-700 dark:text-dark-text-primary">
+                          {friendCount} {friendCount === 1 ? 'Friend' : 'Friends'}
+                        </span>
+                      </Link>
                       <button
                         className="bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-md shadow-sm flex items-center justify-center space-x-1.5 transition-colors duration-200"
                         onClick={() => navigate('/pending-requests')}
                       >
                         <FiUserPlus className="text-base" />
-                        <span className="text-sm font-medium whitespace-nowrap">Pending Request</span>
+                        <span className="text-sm font-medium whitespace-nowrap">Friend Requests</span>
                       </button>
                     </div>
                     
@@ -264,7 +283,7 @@ export default function Dashboard() {
           <div className="mb-8">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-gray-900 dark:text-dark-text-primary">
-                <FiUserCheck className="inline mr-2" />
+                <FiUserPlus className="inline mr-2" />
                 Suggested Connections
               </h2>
               <Link
@@ -281,7 +300,7 @@ export default function Dashboard() {
                   <UserCard
                     key={user.id}
                     user={user}
-                    isFollowing={following.includes(user.id)}
+                    isFollowing={friends.includes(user.id)}
                     onFollowToggle={handleFollowToggle}
                   />
                 ))}
@@ -318,7 +337,7 @@ export default function Dashboard() {
                   <UserCard
                     key={user.id}
                     user={user}
-                    isFollowing={following.includes(user.id)}
+                    isFollowing={friends.includes(user.id)}
                     onFollowToggle={handleFollowToggle}
                   />
                 ))}

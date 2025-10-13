@@ -1,101 +1,101 @@
-import { useState } from 'react';
-import { FiCalendar, FiMapPin, FiClock, FiUsers, FiFilter, FiPlus } from 'react-icons/fi';
+import { useState, useEffect } from 'react';
+import { FiCalendar, FiMapPin, FiClock, FiUsers, FiFilter, FiPlus, FiLoader } from 'react-icons/fi';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../utils/supabaseClient';
 
-const mockEvents = [
-  {
-    id: 1,
-    title: 'Computer Science Career Fair',
-    date: '2025-10-15',
-    time: '10:00 AM - 4:00 PM',
-    location: 'Student Union Ballroom',
-    category: 'Career',
-    attendees: 250,
-    description: 'Meet with top tech companies and explore internship opportunities.',
-    rsvpd: true
-  },
-  {
-    id: 2,
-    title: 'Psychology Club Meeting',
-    date: '2025-10-08',
-    time: '6:00 PM - 7:30 PM',
-    location: 'Psychology Building Room 101',
-    category: 'Club',
-    attendees: 30,
-    description: 'Monthly meeting to discuss upcoming events and guest speakers.',
-    rsvpd: false
-  },
-  {
-    id: 3,
-    title: 'Hackathon 2025',
-    date: '2025-10-20',
-    time: '9:00 AM - 9:00 PM',
-    location: 'Engineering Building',
-    category: 'Competition',
-    attendees: 120,
-    description: '12-hour coding competition with prizes. Form teams of 2-4 students.',
-    rsvpd: true
-  },
-  {
-    id: 4,
-    title: 'Midterm Study Session - Calculus',
-    date: '2025-10-12',
-    time: '4:00 PM - 7:00 PM',
-    location: 'Library Study Hall',
-    category: 'Academic',
-    attendees: 45,
-    description: 'Group study session led by TAs. Bring your questions!',
-    rsvpd: false
-  },
-  {
-    id: 5,
-    title: 'Fall Festival',
-    date: '2025-10-25',
-    time: '2:00 PM - 8:00 PM',
-    location: 'Campus Quad',
-    category: 'Social',
-    attendees: 500,
-    description: 'Food, music, games, and fun activities for all students.',
-    rsvpd: false
-  },
-  {
-    id: 6,
-    title: 'Research Symposium',
-    date: '2025-10-18',
-    time: '1:00 PM - 5:00 PM',
-    location: 'Science Center Auditorium',
-    category: 'Academic',
-    attendees: 80,
-    description: 'Student research presentations across all disciplines.',
-    rsvpd: false
-  }
-];
-
-const categories = ['All', 'Academic', 'Career', 'Social', 'Club', 'Competition', 'Other'];
+const categories = ['All', 'Academic', 'Career', 'Social', 'Club', 'Competition', 'Sports', 'Other'];
 
 export default function Events() {
   const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [myRSVPs, setMyRSVPs] = useState([1, 3]); // Mock RSVP'd event IDs
-  const [viewMode, setViewMode] = useState('upcoming'); // 'upcoming' or 'my-events'
+  const [events, setEvents] = useState([]);
+  const [myRSVPs, setMyRSVPs] = useState([]);
+  const [viewMode, setViewMode] = useState('upcoming');
+  const [loading, setLoading] = useState(true);
 
-  const handleRSVP = (eventId) => {
-    if (myRSVPs.includes(eventId)) {
-      setMyRSVPs(myRSVPs.filter(id => id !== eventId));
-    } else {
-      setMyRSVPs([...myRSVPs, eventId]);
+  useEffect(() => {
+    fetchEvents();
+  }, [user]);
+
+  const fetchEvents = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      // Fetch all active events with attendee count
+      const { data: eventsData, error: eventsError } = await supabase
+        .from('events')
+        .select(`
+          *,
+          creator:profiles!events_creator_id_fkey(username),
+          rsvps:event_rsvps(count)
+        `)
+        .eq('is_active', true)
+        .gte('start_time', new Date().toISOString())
+        .order('start_time', { ascending: true });
+
+      if (eventsError) throw eventsError;
+
+      // Fetch user's RSVPs
+      const { data: userRSVPs, error: rsvpsError } = await supabase
+        .from('event_rsvps')
+        .select('event_id')
+        .eq('user_id', user.id)
+        .eq('status', 'going');
+
+      if (rsvpsError) throw rsvpsError;
+
+      setMyRSVPs(userRSVPs ? userRSVPs.map(r => r.event_id) : []);
+      setEvents(eventsData || []);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const filteredEvents = mockEvents.filter(event => {
-    const matchesCategory = selectedCategory === 'All' || event.category === selectedCategory;
+  const handleRSVP = async (eventId) => {
+    if (!user) return;
+
+    try {
+      if (myRSVPs.includes(eventId)) {
+        // Cancel RSVP
+        const { error } = await supabase
+          .from('event_rsvps')
+          .delete()
+          .eq('event_id', eventId)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+        setMyRSVPs(myRSVPs.filter(id => id !== eventId));
+      } else {
+        // RSVP
+        const { error } = await supabase
+          .from('event_rsvps')
+          .insert([
+            { event_id: eventId, user_id: user.id, status: 'going' }
+          ]);
+
+        if (error) throw error;
+        setMyRSVPs([...myRSVPs, eventId]);
+      }
+
+      // Refresh events to update attendee count
+      fetchEvents();
+    } catch (error) {
+      console.error('Error handling RSVP:', error);
+    }
+  };
+
+  const filteredEvents = events.filter(event => {
+    const matchesCategory = selectedCategory === 'All' || event.event_type === selectedCategory;
     const matchesView = viewMode === 'upcoming' || myRSVPs.includes(event.id);
     return matchesCategory && matchesView;
   });
 
-  const sortedEvents = [...filteredEvents].sort((a, b) => new Date(a.date) - new Date(b.date));
+  const sortedEvents = [...filteredEvents].sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
 
   return (
     <div className="min-h-screen flex flex-col bg-background dark:bg-dark-bg">
@@ -161,64 +161,83 @@ export default function Events() {
           </div>
 
           {/* Events Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {sortedEvents.map(event => (
-              <div key={event.id} className="card p-4 sm:p-6 flex flex-col">
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className={`badge ${
-                      event.category === 'Academic' ? 'badge-primary' :
-                      event.category === 'Career' ? 'badge-teal' :
-                      event.category === 'Social' ? 'badge-peach' :
-                      event.category === 'Club' ? 'badge-sage' :
-                      'badge-primary'
-                    }`}>
-                      {event.category}
-                    </span>
-                    {myRSVPs.includes(event.id) && (
-                      <span className="text-xs font-semibold text-accent-teal">✓ RSVP'd</span>
-                    )}
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-dark-text-primary mb-2">
-                    {event.title}
-                  </h3>
-                  <p className="text-gray-600 dark:text-dark-text-secondary text-sm mb-4">
-                    {event.description}
-                  </p>
-                </div>
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <FiLoader size={32} className="text-primary-500 dark:text-primary-400 animate-spin" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              {sortedEvents.map(event => {
+                const attendeeCount = event.rsvps?.[0]?.count || 0;
+                const startDate = new Date(event.start_time);
+                const endDate = event.end_time ? new Date(event.end_time) : null;
+                const timeRange = `${startDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}${endDate ? ` - ${endDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}` : ''}`;
 
-                <div className="space-y-2 mb-4 text-sm text-gray-600 dark:text-dark-text-secondary flex-1">
-                  <div className="flex items-center">
-                    <FiCalendar className="mr-2 flex-shrink-0" />
-                    <span>{new Date(event.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <FiClock className="mr-2 flex-shrink-0" />
-                    <span>{event.time}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <FiMapPin className="mr-2 flex-shrink-0" />
-                    <span>{event.location}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <FiUsers className="mr-2 flex-shrink-0" />
-                    <span>{event.attendees} attending</span>
-                  </div>
-                </div>
+                return (
+                  <div key={event.id} className="card p-4 sm:p-6 flex flex-col">
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className={`badge ${
+                          event.event_type === 'Academic' ? 'badge-primary' :
+                          event.event_type === 'Career' ? 'badge-teal' :
+                          event.event_type === 'Social' ? 'badge-peach' :
+                          event.event_type === 'Club' ? 'badge-sage' :
+                          'badge-primary'
+                        }`}>
+                          {event.event_type || 'Event'}
+                        </span>
+                        {myRSVPs.includes(event.id) && (
+                          <span className="text-xs font-semibold text-accent-teal">✓ RSVP'd</span>
+                        )}
+                      </div>
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-dark-text-primary mb-2">
+                        {event.title}
+                      </h3>
+                      {event.description && (
+                        <p className="text-gray-600 dark:text-dark-text-secondary text-sm mb-4">
+                          {event.description}
+                        </p>
+                      )}
+                    </div>
 
-                <button
-                  onClick={() => handleRSVP(event.id)}
-                  className={`w-full ${
-                    myRSVPs.includes(event.id)
-                      ? 'btn btn-secondary'
-                      : 'btn btn-primary'
-                  }`}
-                >
-                  {myRSVPs.includes(event.id) ? 'Cancel RSVP' : 'RSVP'}
-                </button>
-              </div>
-            ))}
-          </div>
+                    <div className="space-y-2 mb-4 text-sm text-gray-600 dark:text-dark-text-secondary flex-1">
+                      <div className="flex items-center">
+                        <FiCalendar className="mr-2 flex-shrink-0" />
+                        <span>{startDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <FiClock className="mr-2 flex-shrink-0" />
+                        <span>{timeRange}</span>
+                      </div>
+                      {event.location && (
+                        <div className="flex items-center">
+                          <FiMapPin className="mr-2 flex-shrink-0" />
+                          <span>{event.location}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center">
+                        <FiUsers className="mr-2 flex-shrink-0" />
+                        <span>{attendeeCount} {attendeeCount === 1 ? 'person' : 'people'} attending</span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleRSVP(event.id)}
+                      className={`w-full ${
+                        myRSVPs.includes(event.id)
+                          ? 'btn btn-secondary'
+                          : 'btn btn-primary'
+                      }`}
+                      disabled={event.max_attendees && !myRSVPs.includes(event.id) && attendeeCount >= event.max_attendees}
+                    >
+                      {myRSVPs.includes(event.id) ? 'Cancel RSVP' :
+                       event.max_attendees && attendeeCount >= event.max_attendees ? 'Event Full' : 'RSVP'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {sortedEvents.length === 0 && (
             <div className="card p-12 text-center">

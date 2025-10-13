@@ -147,18 +147,14 @@ export default function UserCard({ user, isFollowing, onFollowToggle }) {
                     {/* Social connections */}
                     <div className="bg-gray-50 dark:bg-dark-bg/50 rounded-xl p-3 border border-gray-100 dark:border-dark-border">
                       <h4 className="text-xs font-semibold text-gray-500 dark:text-dark-text-secondary mb-2 uppercase tracking-wide">Connections</h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 p-2 rounded-lg text-center shadow-sm">
-                          <div className="text-primary-700 dark:text-primary-400 text-lg font-bold">
-                            {user.followerCount || 0}
+                      <div className="flex justify-center">
+                        <div className="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 p-3 rounded-lg text-center shadow-sm w-full">
+                          <div className="text-primary-700 dark:text-primary-400 text-xl font-bold">
+                            {user.friendCount || 0}
                           </div>
-                          <div className="text-gray-600 dark:text-dark-text-secondary text-xs font-medium">Followers</div>
-                        </div>
-                        <div className="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 p-2 rounded-lg text-center shadow-sm">
-                          <div className="text-primary-700 dark:text-primary-400 text-lg font-bold">
-                            {user.followingCount || 0}
+                          <div className="text-gray-600 dark:text-dark-text-secondary text-xs font-medium">
+                            {user.friendCount === 1 ? 'Friend' : 'Friends'}
                           </div>
-                          <div className="text-gray-600 dark:text-dark-text-secondary text-xs font-medium">Following</div>
                         </div>
                       </div>
 

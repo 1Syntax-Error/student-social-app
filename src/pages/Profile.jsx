@@ -1,6 +1,6 @@
 // 24. src/pages/Profile.jsx
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../utils/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import Navbar from '../components/layout/Navbar';
@@ -8,19 +8,17 @@ import Footer from '../components/layout/Footer';
 import ProfileHeader from '../components/profile/ProfileHeader';
 import ProfileDetails from '../components/profile/ProfileDetails';
 import UserList from '../components/social/UserList';
-import { FiLoader, FiUserX, FiUsers } from 'react-icons/fi';
+import { FiLoader, FiUserX, FiUsers, FiArrowRight } from 'react-icons/fi';
 
 export default function Profile() {
   const { id } = useParams();
   const { user } = useAuth();
   
   const [profileData, setProfileData] = useState(null);
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [followerCount, setFollowerCount] = useState(0);
-  const [followingCount, setFollowingCount] = useState(0);
+  const [isFriend, setIsFriend] = useState(false);
+  const [friendCount, setFriendCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showFollowers, setShowFollowers] = useState(false);
   
   useEffect(() => {
     const fetchProfile = async () => {
@@ -38,8 +36,8 @@ export default function Profile() {
         if (profileError) throw profileError;
         
         setProfileData(profileData);
-        
-        // Check if current user is following this profile
+
+        // Check if current user is friends with this profile
         if (user && user.id !== id) {
           const { data: followData } = await supabase
             .from('follows')
@@ -48,24 +46,16 @@ export default function Profile() {
             .eq('following_id', id)
             .single();
 
-          setIsFollowing(!!followData);
+          setIsFriend(!!followData);
         }
 
-        // Get follower count
-        const { count: followers } = await supabase
-          .from('follows')
-          .select('*', { count: 'exact', head: true })
-          .eq('following_id', id);
-
-        setFollowerCount(followers || 0);
-        
-        // Get following count
-        const { count: following } = await supabase
+        // Get friend count (mutual follows)
+        const { count: friends } = await supabase
           .from('follows')
           .select('*', { count: 'exact', head: true })
           .eq('follower_id', id);
-          
-        setFollowingCount(following || 0);
+
+        setFriendCount(friends || 0);
       } catch (error) {
         console.error('Error fetching profile:', error);
         setError('Failed to load profile');
@@ -79,32 +69,31 @@ export default function Profile() {
   
   const handleFollowToggle = async () => {
     if (!user) return;
-    if (user.id === id) return; // Can't follow yourself
+    if (user.id === id) return; // Can't be friends with yourself
 
     try {
-      if (isFollowing) {
-        // Unfollow
+      if (isFriend) {
+        // Unfriend - remove mutual follows
         await supabase
           .from('follows')
           .delete()
           .eq('follower_id', user.id)
           .eq('following_id', id);
 
-        setFollowerCount(prev => Math.max(0, prev - 1));
-      } else {
-        // Follow
         await supabase
           .from('follows')
-          .insert([
-            { follower_id: user.id, following_id: id }
-          ]);
+          .delete()
+          .eq('follower_id', id)
+          .eq('following_id', user.id);
 
-        setFollowerCount(prev => prev + 1);
+        setFriendCount(prev => Math.max(0, prev - 1));
+        setIsFriend(false);
+      } else {
+        // Send friend request (handled by FollowButton component)
+        setIsFriend(true);
       }
-
-      setIsFollowing(!isFollowing);
     } catch (error) {
-      console.error('Error toggling follow:', error);
+      console.error('Error toggling friend:', error);
     }
   };
   
@@ -147,83 +136,61 @@ export default function Profile() {
 
       <main className="flex-1 bg-gray-50 dark:bg-dark-bg py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Profile header with follow button */}
+          {/* Profile header with friend button */}
           <ProfileHeader
             profile={profileData}
-            isFollowing={isFollowing}
-            followers={followerCount}
-            following={followingCount}
+            isFriend={isFriend}
+            friendCount={friendCount}
             onFollowToggle={handleFollowToggle}
           />
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Sidebar with profile details */}
             <div className="lg:col-span-1">
               <ProfileDetails profile={profileData} />
             </div>
-            
+
             {/* Main content area */}
             <div className="lg:col-span-2">
-              {/* Connection tabs */}
-              <div className="bg-white border border-gray-200 rounded-lg shadow-sm mb-6">
-                <div className="flex">
-                  <button
-                    onClick={() => setShowFollowers(false)}
-                    className={`flex-1 py-4 px-4 text-center font-medium ${
-                      !showFollowers
-                        ? 'text-primary-600 border-b-2 border-primary-600'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    Following ({followingCount})
-                  </button>
-                  <button
-                    onClick={() => setShowFollowers(true)}
-                    className={`flex-1 py-4 px-4 text-center font-medium ${
-                      showFollowers
-                        ? 'text-primary-600 border-b-2 border-primary-600'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    Followers ({followerCount})
-                  </button>
+              {/* Friends section */}
+              <div className="bg-white dark:bg-dark-surface border border-gray-200 dark:border-dark-border rounded-lg shadow-sm mb-6">
+                <div className="border-b border-gray-200 dark:border-dark-border py-4 px-4 flex justify-between items-center">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-dark-text-primary">
+                    Friends ({friendCount})
+                  </h3>
+                  {friendCount > 0 && (
+                    <Link
+                      to={`/friends/${id}`}
+                      className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm font-medium inline-flex items-center"
+                    >
+                      View All <FiArrowRight className="ml-1" />
+                    </Link>
+                  )}
                 </div>
-                
+
                 <div className="p-4">
-                  {showFollowers ? (
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-4">
-                        People following {profileData.username}
-                      </h3>
-                      {/* We'd fetch and display followers here */}
-                      <div className="flex items-center justify-center py-8">
-                        <div className="flex items-center space-x-2 text-gray-500">
-                          <FiUsers />
-                          <span>
-                            {followerCount === 0
-                              ? 'No followers yet'
-                              : `${followerCount} ${followerCount === 1 ? 'follower' : 'followers'}`}
-                          </span>
-                        </div>
+                  {friendCount === 0 ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="text-center">
+                        <FiUsers className="mx-auto text-gray-400 dark:text-gray-500 mb-2" size={32} />
+                        <span className="text-gray-500 dark:text-dark-text-secondary">
+                          No friends yet
+                        </span>
                       </div>
                     </div>
                   ) : (
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-900 mb-4">
-                        People {profileData.username} follows
-                      </h3>
-                      {/* We'd fetch and display following here */}
-                      <div className="flex items-center justify-center py-8">
-                        <div className="flex items-center space-x-2 text-gray-500">
-                          <FiUsers />
-                          <span>
-                            {followingCount === 0
-                              ? 'Not following anyone yet'
-                              : `Following ${followingCount} ${followingCount === 1 ? 'person' : 'people'}`}
-                          </span>
-                        </div>
+                    <Link
+                      to={`/friends/${id}`}
+                      className="flex items-center justify-center py-8 hover:bg-gray-50 dark:hover:bg-dark-bg rounded-lg transition-colors duration-200 cursor-pointer"
+                    >
+                      <div className="flex items-center space-x-2 text-primary-600 dark:text-primary-400">
+                        <FiUsers />
+                        <span className="font-medium">
+                          View {friendCount} {friendCount === 1 ? 'friend' : 'friends'}
+                        </span>
+                        <FiArrowRight />
                       </div>
-                    </div>
+                    </Link>
                   )}
                 </div>
               </div>
