@@ -65,13 +65,42 @@ export default function PendingRequests() {
 
   const handleAcceptRequest = async (requestId) => {
     try {
+      // Find the request to get sender and receiver IDs
+      const request = pendingRequests.find(req => req.id === requestId);
+      if (!request) return;
+
       // Update the friend request status to 'accepted'
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from('friend_requests')
         .update({ status: 'accepted' })
         .eq('id', requestId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
+
+      // Create bidirectional follow relationships
+      // 1. Sender follows receiver (current user follows the sender)
+      const { error: follow1Error } = await supabase
+        .from('follows')
+        .insert([
+          {
+            follower_id: user.id,
+            following_id: request.senderId
+          }
+        ]);
+
+      if (follow1Error) throw follow1Error;
+
+      // 2. Receiver follows sender (sender follows current user)
+      const { error: follow2Error } = await supabase
+        .from('follows')
+        .insert([
+          {
+            follower_id: request.senderId,
+            following_id: user.id
+          }
+        ]);
+
+      if (follow2Error) throw follow2Error;
 
       // Remove from UI
       setPendingRequests(pendingRequests.filter(req => req.id !== requestId));

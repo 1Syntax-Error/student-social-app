@@ -52,13 +52,23 @@ export default function Friends() {
 
         if (friendsError) throw friendsError;
 
-        // Transform the data to match UserCard expectations
-        const formattedFriends = (friendsData || []).map(item => ({
-          ...item.friend,
-          friendCount: 0 // We can optionally fetch each friend's friend count
-        }));
+        // Transform the data and fetch friend counts for each friend
+        const formattedFriendsWithCounts = await Promise.all(
+          (friendsData || []).map(async (item) => {
+            // Fetch friend count for each friend
+            const { count } = await supabase
+              .from('follows')
+              .select('*', { count: 'exact', head: true })
+              .eq('follower_id', item.friend.id);
 
-        setFriends(formattedFriends);
+            return {
+              ...item.friend,
+              friendCount: count || 0
+            };
+          })
+        );
+
+        setFriends(formattedFriendsWithCounts);
 
         // If current user is logged in, fetch their following list
         if (currentUser) {

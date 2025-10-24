@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FiUsers, FiSearch, FiUser, FiArrowRight, FiEdit3, FiBookOpen, FiMail, FiLinkedin, FiUserPlus, FiCalendar, FiBook, FiFile, FiAward } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
-import { mockUsers } from '../utils/mockData';
 import { supabase } from '../utils/supabaseClient';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
@@ -35,23 +34,130 @@ export default function Dashboard() {
         setFriends(friendIds);
         setFriendCount(friendIds.length);
 
-        // Simulate API call for mock data
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Helper function to add friend counts to users
+        const addFriendCounts = async (users) => {
+          if (!users || users.length === 0) return [];
 
-        // Filter users to exclude current user and friends
-        const filteredUsers = mockUsers.filter(
-          u => u.id !== user.id && !friendIds.includes(u.id)
-        );
+          const usersWithCounts = await Promise.all(
+            users.map(async (userData) => {
+              const { count } = await supabase
+                .from('follows')
+                .select('*', { count: 'exact', head: true })
+                .eq('follower_id', userData.id);
 
-        // Get "recent" users (just a subset of mock users)
-        setRecentUsers(filteredUsers.slice(0, 2));
+              return {
+                ...userData,
+                friendCount: count || 0
+              };
+            })
+          );
 
-        // Get "suggested" users (users with same major as current user)
-        const suggestedByMajor = filteredUsers.filter(
-          u => u.major === user.major
-        ).slice(0, 2);
+          return usersWithCounts;
+        };
 
-        setSuggestedUsers(suggestedByMajor);
+        // Fetch recently joined users from database
+        let recentQuery = supabase
+          .from('profiles')
+          .select('*')
+          .neq('id', user.id);
+
+        // Only exclude friends if there are any
+        if (friendIds.length > 0) {
+          recentQuery = recentQuery.not('id', 'in', `(${friendIds.join(',')})`);
+        }
+
+        recentQuery = recentQuery.order('created_at', { ascending: false }).limit(4);
+
+        const { data: recentUsersData, error: recentError } = await recentQuery;
+
+        if (recentError) {
+          console.error('Error fetching recent users:', recentError);
+        } else {
+          const recentUsersWithCounts = await addFriendCounts(recentUsersData);
+          setRecentUsers(recentUsersWithCounts);
+        }
+
+        // Fetch suggested users with priority:
+        // 1. Same school AND same major (highest priority)
+        // 2. Same school
+        // 3. Same major
+        let suggestedUsersWithPriority = [];
+
+        // Priority 1: Same school AND same major
+        if (user.university && user.major) {
+          let query1 = supabase
+            .from('profiles')
+            .select('*')
+            .eq('university', user.university)
+            .eq('major', user.major)
+            .neq('id', user.id);
+
+          if (friendIds.length > 0) {
+            query1 = query1.not('id', 'in', `(${friendIds.join(',')})`);
+          }
+
+          query1 = query1.limit(4);
+
+          const { data: sameSchoolAndMajor } = await query1;
+
+          if (sameSchoolAndMajor && sameSchoolAndMajor.length > 0) {
+            suggestedUsersWithPriority = await addFriendCounts(sameSchoolAndMajor);
+          }
+        }
+
+        // Priority 2: Same school (if we need more users)
+        if (suggestedUsersWithPriority.length < 4 && user.university) {
+          let query2 = supabase
+            .from('profiles')
+            .select('*')
+            .eq('university', user.university)
+            .neq('id', user.id);
+
+          if (friendIds.length > 0) {
+            query2 = query2.not('id', 'in', `(${friendIds.join(',')})`);
+          }
+
+          query2 = query2.limit(4 - suggestedUsersWithPriority.length);
+
+          const { data: sameSchool } = await query2;
+
+          if (sameSchool && sameSchool.length > 0) {
+            const sameSchoolWithCounts = await addFriendCounts(sameSchool);
+            // Filter out duplicates
+            const newUsers = sameSchoolWithCounts.filter(
+              u => !suggestedUsersWithPriority.find(existing => existing.id === u.id)
+            );
+            suggestedUsersWithPriority = [...suggestedUsersWithPriority, ...newUsers];
+          }
+        }
+
+        // Priority 3: Same major (if we still need more users)
+        if (suggestedUsersWithPriority.length < 4 && user.major) {
+          let query3 = supabase
+            .from('profiles')
+            .select('*')
+            .eq('major', user.major)
+            .neq('id', user.id);
+
+          if (friendIds.length > 0) {
+            query3 = query3.not('id', 'in', `(${friendIds.join(',')})`);
+          }
+
+          query3 = query3.limit(4 - suggestedUsersWithPriority.length);
+
+          const { data: sameMajor } = await query3;
+
+          if (sameMajor && sameMajor.length > 0) {
+            const sameMajorWithCounts = await addFriendCounts(sameMajor);
+            // Filter out duplicates
+            const newUsers = sameMajorWithCounts.filter(
+              u => !suggestedUsersWithPriority.find(existing => existing.id === u.id)
+            );
+            suggestedUsersWithPriority = [...suggestedUsersWithPriority, ...newUsers];
+          }
+        }
+
+        setSuggestedUsers(suggestedUsersWithPriority);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -142,10 +248,10 @@ export default function Dashboard() {
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                       <Link
                         to={`/friends/${user.id}`}
-                        className="bg-white dark:bg-dark-bg p-2 rounded-md shadow-sm flex items-center justify-center space-x-1.5 border border-primary-200 dark:border-dark-border hover:bg-primary-50 dark:hover:bg-dark-border transition-colors duration-200 cursor-pointer"
+                        className="bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-md shadow-sm flex items-center justify-center space-x-1.5 transition-colors duration-200"
                       >
-                        <FiUsers className="text-base text-primary-600 dark:text-primary-400" />
-                        <span className="text-sm font-medium whitespace-nowrap text-gray-700 dark:text-dark-text-primary">
+                        <FiUsers className="text-base" />
+                        <span className="text-sm font-medium whitespace-nowrap">
                           {friendCount} {friendCount === 1 ? 'Friend' : 'Friends'}
                         </span>
                       </Link>

@@ -8,15 +8,18 @@ import Footer from '../components/layout/Footer';
 import ProfileHeader from '../components/profile/ProfileHeader';
 import ProfileDetails from '../components/profile/ProfileDetails';
 import UserList from '../components/social/UserList';
+import UserCard from '../components/social/UserCard';
 import { FiLoader, FiUserX, FiUsers, FiArrowRight } from 'react-icons/fi';
 
 export default function Profile() {
   const { id } = useParams();
   const { user } = useAuth();
-  
+
   const [profileData, setProfileData] = useState(null);
   const [isFriend, setIsFriend] = useState(false);
   const [friendCount, setFriendCount] = useState(0);
+  const [friends, setFriends] = useState([]);
+  const [following, setFollowing] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
@@ -56,6 +59,43 @@ export default function Profile() {
           .eq('follower_id', id);
 
         setFriendCount(friends || 0);
+
+        // Fetch the user's friends (people they follow)
+        const { data: friendsData, error: friendsError } = await supabase
+          .from('follows')
+          .select(`
+            following_id,
+            friend:profiles!follows_following_id_fkey (
+              id,
+              username,
+              full_name,
+              major,
+              university,
+              profile_image_url,
+              bio
+            )
+          `)
+          .eq('follower_id', id);
+
+        if (!friendsError && friendsData) {
+          // Transform the data to match UserCard expectations
+          const formattedFriends = friendsData.map(item => ({
+            ...item.friend,
+            friendCount: 0
+          }));
+          setFriends(formattedFriends);
+        }
+
+        // If current user is logged in, fetch their following list
+        if (user) {
+          const { data: followingData } = await supabase
+            .from('follows')
+            .select('following_id')
+            .eq('follower_id', user.id);
+
+          const followingIds = followingData ? followingData.map(f => f.following_id) : [];
+          setFollowing(followingIds);
+        }
       } catch (error) {
         console.error('Error fetching profile:', error);
         setError('Failed to load profile');
@@ -94,6 +134,15 @@ export default function Profile() {
       }
     } catch (error) {
       console.error('Error toggling friend:', error);
+    }
+  };
+
+  const handleFriendFollowToggle = async (friendId) => {
+    // Update local state optimistically
+    if (following.includes(friendId)) {
+      setFollowing(following.filter(id => id !== friendId));
+    } else {
+      setFollowing([...following, friendId]);
     }
   };
   
@@ -158,7 +207,7 @@ export default function Profile() {
                   <h3 className="text-lg font-medium text-gray-900 dark:text-dark-text-primary">
                     Friends ({friendCount})
                   </h3>
-                  {friendCount > 0 && (
+                  {friendCount > 6 && (
                     <Link
                       to={`/friends/${id}`}
                       className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 text-sm font-medium inline-flex items-center"
@@ -179,18 +228,28 @@ export default function Profile() {
                       </div>
                     </div>
                   ) : (
-                    <Link
-                      to={`/friends/${id}`}
-                      className="flex items-center justify-center py-8 hover:bg-gray-50 dark:hover:bg-dark-bg rounded-lg transition-colors duration-200 cursor-pointer"
-                    >
-                      <div className="flex items-center space-x-2 text-primary-600 dark:text-primary-400">
-                        <FiUsers />
-                        <span className="font-medium">
-                          View {friendCount} {friendCount === 1 ? 'friend' : 'friends'}
-                        </span>
-                        <FiArrowRight />
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {friends.slice(0, 6).map((friend) => (
+                          <UserCard
+                            key={friend.id}
+                            user={friend}
+                            isFollowing={following.includes(friend.id)}
+                            onFollowToggle={handleFriendFollowToggle}
+                          />
+                        ))}
                       </div>
-                    </Link>
+                      {friendCount > 6 && (
+                        <div className="mt-4 text-center">
+                          <Link
+                            to={`/friends/${id}`}
+                            className="inline-flex items-center text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
+                          >
+                            View all {friendCount} friends <FiArrowRight className="ml-1" />
+                          </Link>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

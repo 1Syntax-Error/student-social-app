@@ -13,6 +13,18 @@ export default function CourseReviews() {
   const [showWriteReview, setShowWriteReview] = useState(false);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    course: '',
+    rating: 5,
+    difficulty: 3,
+    workload: '',
+    semester: 'Fall',
+    year: new Date().getFullYear(),
+    reviewText: ''
+  });
 
   useEffect(() => {
     fetchReviews();
@@ -72,6 +84,55 @@ export default function CourseReviews() {
     if (difficulty <= 2) return 'text-green-600 dark:text-green-400';
     if (difficulty <= 3) return 'text-yellow-600 dark:text-yellow-400';
     return 'text-red-600 dark:text-red-400';
+  };
+
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    if (!user) return;
+
+    setSubmitting(true);
+    try {
+      // Parse course code and name from COURSES constant
+      const [courseCode, courseName] = formData.course ? formData.course.split(' - ') : ['', ''];
+
+      const { error } = await supabase
+        .from('course_reviews')
+        .insert([
+          {
+            user_id: user.id,
+            course_code: courseCode,
+            course_name: courseName,
+            rating: formData.rating,
+            difficulty: formData.difficulty,
+            workload: formData.workload || null,
+            semester: formData.semester,
+            year: formData.year,
+            review_text: formData.reviewText || null
+          }
+        ]);
+
+      if (error) throw error;
+
+      // Reset form and close modal
+      setFormData({
+        course: '',
+        rating: 5,
+        difficulty: 3,
+        workload: '',
+        semester: 'Fall',
+        year: new Date().getFullYear(),
+        reviewText: ''
+      });
+      setShowWriteReview(false);
+
+      // Refresh reviews
+      fetchReviews();
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      alert('Failed to submit review. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -228,20 +289,154 @@ export default function CourseReviews() {
             </div>
           )}
 
-          {/* Write Review Modal Placeholder */}
+          {/* Write Review Modal */}
           {showWriteReview && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-              <div className="bg-white dark:bg-dark-surface rounded-lg p-6 max-w-md w-full">
-                <h2 className="text-2xl font-bold mb-4 dark:text-dark-text-primary">Write a Review</h2>
-                <p className="text-gray-600 dark:text-dark-text-secondary mb-4">
-                  This feature will allow you to write a course review with ratings for difficulty, workload, and overall quality.
-                </p>
-                <button
-                  onClick={() => setShowWriteReview(false)}
-                  className="btn btn-primary w-full"
-                >
-                  Close
-                </button>
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowWriteReview(false)}>
+              <div className="bg-white dark:bg-dark-surface rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <h2 className="text-2xl font-bold mb-6 dark:text-dark-text-primary">Write a Course Review</h2>
+
+                <form onSubmit={handleSubmitReview} className="space-y-4">
+                  {/* Course Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                      Course *
+                    </label>
+                    <select
+                      required
+                      value={formData.course}
+                      onChange={(e) => setFormData({ ...formData, course: e.target.value })}
+                      className="input w-full"
+                    >
+                      <option value="">Select a course</option>
+                      {COURSES.map(course => (
+                        <option key={course} value={course}>{course}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Overall Rating */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                      Overall Rating: {formData.rating}/5
+                    </label>
+                    <div className="flex gap-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, rating: star })}
+                          className="focus:outline-none"
+                        >
+                          <FiStar
+                            size={32}
+                            className={`${star <= formData.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'} transition-colors`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Difficulty */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                      Difficulty: {formData.difficulty}/5
+                    </label>
+                    <input
+                      type="range"
+                      min="1"
+                      max="5"
+                      value={formData.difficulty}
+                      onChange={(e) => setFormData({ ...formData, difficulty: parseInt(e.target.value) })}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>Easy</span>
+                      <span>Moderate</span>
+                      <span>Hard</span>
+                    </div>
+                  </div>
+
+                  {/* Semester and Year */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                        Semester *
+                      </label>
+                      <select
+                        required
+                        value={formData.semester}
+                        onChange={(e) => setFormData({ ...formData, semester: e.target.value })}
+                        className="input w-full"
+                      >
+                        <option value="Spring">Spring</option>
+                        <option value="Summer">Summer</option>
+                        <option value="Fall">Fall</option>
+                        <option value="Winter">Winter</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                        Year *
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        min="2000"
+                        max={new Date().getFullYear() + 1}
+                        value={formData.year}
+                        onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
+                        className="input w-full"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Workload */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                      Workload (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.workload}
+                      onChange={(e) => setFormData({ ...formData, workload: e.target.value })}
+                      className="input w-full"
+                      placeholder="e.g., Light, Moderate, Heavy"
+                    />
+                  </div>
+
+                  {/* Review Text */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                      Your Review
+                    </label>
+                    <textarea
+                      value={formData.reviewText}
+                      onChange={(e) => setFormData({ ...formData, reviewText: e.target.value })}
+                      className="input w-full"
+                      rows="5"
+                      placeholder="Share your experience with this course..."
+                    />
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowWriteReview(false)}
+                      className="btn btn-secondary flex-1"
+                      disabled={submitting}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn btn-primary flex-1"
+                      disabled={submitting}
+                    >
+                      {submitting ? 'Submitting...' : 'Submit Review'}
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           )}

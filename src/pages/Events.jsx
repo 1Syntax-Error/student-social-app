@@ -14,6 +14,19 @@ export default function Events() {
   const [myRSVPs, setMyRSVPs] = useState([]);
   const [viewMode, setViewMode] = useState('upcoming');
   const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creating, setCreating] = useState(false);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    eventType: 'Academic',
+    startTime: '',
+    endTime: '',
+    location: '',
+    maxAttendees: ''
+  });
 
   useEffect(() => {
     fetchEvents();
@@ -89,6 +102,61 @@ export default function Events() {
     }
   };
 
+  const handleCreateEvent = async (e) => {
+    e.preventDefault();
+    if (!user) return;
+
+    setCreating(true);
+    try {
+      const { data: newEvent, error } = await supabase
+        .from('events')
+        .insert([
+          {
+            name: formData.name,
+            description: formData.description,
+            event_type: formData.eventType,
+            start_time: formData.startTime,
+            end_time: formData.endTime,
+            location: formData.location || null,
+            max_attendees: formData.maxAttendees ? parseInt(formData.maxAttendees) : null,
+            creator_id: user.id,
+            is_active: true
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Auto-RSVP the creator
+      await supabase
+        .from('event_rsvps')
+        .insert([
+          { event_id: newEvent.id, user_id: user.id, status: 'going' }
+        ]);
+
+      // Reset form and close modal
+      setFormData({
+        name: '',
+        description: '',
+        eventType: 'Academic',
+        startTime: '',
+        endTime: '',
+        location: '',
+        maxAttendees: ''
+      });
+      setShowCreateModal(false);
+
+      // Refresh events list
+      fetchEvents();
+    } catch (error) {
+      console.error('Error creating event:', error);
+      alert('Failed to create event. Please try again.');
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const filteredEvents = events.filter(event => {
     const matchesCategory = selectedCategory === 'All' || event.event_type === selectedCategory;
     const matchesView = viewMode === 'upcoming' || myRSVPs.includes(event.id);
@@ -104,13 +172,22 @@ export default function Events() {
       <main className="flex-1 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-dark-text-primary mb-2">
-              Campus Events
-            </h1>
-            <p className="text-gray-600 dark:text-dark-text-secondary">
-              Discover and attend events happening on campus
-            </p>
+          <div className="mb-8 flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-dark-text-primary mb-2">
+                Campus Events
+              </h1>
+              <p className="text-gray-600 dark:text-dark-text-secondary">
+                Discover and attend events happening on campus
+              </p>
+            </div>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="btn btn-primary whitespace-nowrap"
+            >
+              <FiPlus className="mr-2" />
+              Create Event
+            </button>
           </div>
 
           {/* View Toggle */}
@@ -248,6 +325,139 @@ export default function Events() {
               <p className="text-gray-600 dark:text-dark-text-secondary">
                 {viewMode === 'my-events' ? 'You haven\'t RSVP\'d to any events yet.' : 'Check back later for new events!'}
               </p>
+            </div>
+          )}
+          {/* Create Event Modal */}
+          {showCreateModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowCreateModal(false)}>
+              <div className="bg-white dark:bg-dark-surface rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <h2 className="text-2xl font-bold mb-6 dark:text-dark-text-primary">Create Campus Event</h2>
+
+                <form onSubmit={handleCreateEvent} className="space-y-4">
+                  {/* Event Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                      Event Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="input w-full"
+                      placeholder="e.g., Career Fair 2024"
+                    />
+                  </div>
+
+                  {/* Event Type */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                      Event Type *
+                    </label>
+                    <select
+                      required
+                      value={formData.eventType}
+                      onChange={(e) => setFormData({ ...formData, eventType: e.target.value })}
+                      className="input w-full"
+                    >
+                      {categories.filter(c => c !== 'All').map(category => (
+                        <option key={category} value={category}>{category}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                      Description *
+                    </label>
+                    <textarea
+                      required
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      className="input w-full"
+                      rows="3"
+                      placeholder="Describe your event..."
+                    />
+                  </div>
+
+                  {/* Date and Time Row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                        Start Time *
+                      </label>
+                      <input
+                        type="datetime-local"
+                        required
+                        value={formData.startTime}
+                        onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                        className="input w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                        End Time *
+                      </label>
+                      <input
+                        type="datetime-local"
+                        required
+                        value={formData.endTime}
+                        onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                        className="input w-full"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Location */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                      Location
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.location}
+                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                      className="input w-full"
+                      placeholder="e.g., Student Center Auditorium"
+                    />
+                  </div>
+
+                  {/* Max Attendees */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                      Maximum Attendees (Optional)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={formData.maxAttendees}
+                      onChange={(e) => setFormData({ ...formData, maxAttendees: e.target.value })}
+                      className="input w-full"
+                      placeholder="Leave empty for unlimited"
+                    />
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateModal(false)}
+                      className="btn btn-secondary flex-1"
+                      disabled={creating}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn btn-primary flex-1"
+                      disabled={creating}
+                    >
+                      {creating ? 'Creating...' : 'Create Event'}
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           )}
         </div>

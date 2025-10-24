@@ -15,6 +15,17 @@ export default function StudyGroups() {
   const [studyGroups, setStudyGroups] = useState([]);
   const [myGroups, setMyGroups] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    course: '',
+    maxMembers: 10,
+    meetingTime: '',
+    location: ''
+  });
 
   useEffect(() => {
     fetchStudyGroups();
@@ -94,6 +105,63 @@ export default function StudyGroups() {
       fetchStudyGroups();
     } catch (error) {
       console.error('Error joining/leaving group:', error);
+    }
+  };
+
+  const handleCreateGroup = async (e) => {
+    e.preventDefault();
+    if (!user) return;
+
+    setCreating(true);
+    try {
+      // Parse course code and name from COURSES constant
+      const [courseCode, courseName] = formData.course ? formData.course.split(' - ') : ['', ''];
+
+      const { data: newGroup, error } = await supabase
+        .from('study_groups')
+        .insert([
+          {
+            name: formData.name,
+            description: formData.description,
+            course_code: courseCode,
+            course_name: courseName,
+            creator_id: user.id,
+            max_members: formData.maxMembers,
+            meeting_time: formData.meetingTime || null,
+            location: formData.location || null,
+            is_active: true
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Auto-join the creator as admin
+      await supabase
+        .from('study_group_members')
+        .insert([
+          { group_id: newGroup.id, user_id: user.id, role: 'admin' }
+        ]);
+
+      // Reset form and close modal
+      setFormData({
+        name: '',
+        description: '',
+        course: '',
+        maxMembers: 10,
+        meetingTime: '',
+        location: ''
+      });
+      setShowCreateModal(false);
+
+      // Refresh the groups list
+      fetchStudyGroups();
+    } catch (error) {
+      console.error('Error creating study group:', error);
+      alert('Failed to create study group. Please try again.');
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -236,20 +304,122 @@ export default function StudyGroups() {
             </div>
           )}
 
-          {/* Create Group Modal Placeholder */}
+          {/* Create Group Modal */}
           {showCreateModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-              <div className="bg-white dark:bg-dark-surface rounded-lg p-6 max-w-md w-full">
-                <h2 className="text-2xl font-bold mb-4 dark:text-dark-text-primary">Create Study Group</h2>
-                <p className="text-gray-600 dark:text-dark-text-secondary mb-4">
-                  This feature will allow you to create a new study group with course selection, schedule, and location.
-                </p>
-                <button
-                  onClick={() => setShowCreateModal(false)}
-                  className="btn btn-primary w-full"
-                >
-                  Close
-                </button>
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowCreateModal(false)}>
+              <div className="bg-white dark:bg-dark-surface rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <h2 className="text-2xl font-bold mb-6 dark:text-dark-text-primary">Create Study Group</h2>
+
+                <form onSubmit={handleCreateGroup} className="space-y-4">
+                  {/* Group Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                      Group Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="input w-full"
+                      placeholder="e.g., CS 101 Study Group"
+                    />
+                  </div>
+
+                  {/* Course Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                      Course *
+                    </label>
+                    <select
+                      required
+                      value={formData.course}
+                      onChange={(e) => setFormData({ ...formData, course: e.target.value })}
+                      className="input w-full"
+                    >
+                      <option value="">Select a course</option>
+                      {COURSES.map(course => (
+                        <option key={course} value={course}>{course}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      className="input w-full"
+                      rows="3"
+                      placeholder="What will this study group focus on?"
+                    />
+                  </div>
+
+                  {/* Max Members */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                      Maximum Members
+                    </label>
+                    <input
+                      type="number"
+                      min="2"
+                      max="50"
+                      value={formData.maxMembers}
+                      onChange={(e) => setFormData({ ...formData, maxMembers: parseInt(e.target.value) })}
+                      className="input w-full"
+                    />
+                  </div>
+
+                  {/* Meeting Time */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                      Meeting Time (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.meetingTime}
+                      onChange={(e) => setFormData({ ...formData, meetingTime: e.target.value })}
+                      className="input w-full"
+                      placeholder="e.g., Mondays 3-5 PM"
+                    />
+                  </div>
+
+                  {/* Location */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                      Location (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.location}
+                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                      className="input w-full"
+                      placeholder="e.g., Library Room 204"
+                    />
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateModal(false)}
+                      className="btn btn-secondary flex-1"
+                      disabled={creating}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn btn-primary flex-1"
+                      disabled={creating}
+                    >
+                      {creating ? 'Creating...' : 'Create Group'}
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           )}

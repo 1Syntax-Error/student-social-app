@@ -56,10 +56,25 @@ export default function UserList({ filter = {}, searchTerm = '', maxUsers = 12 }
         query = query.limit(maxUsers);
         
         const { data, error } = await query;
-        
+
         if (error) throw error;
-        
-        setUsers(data || []);
+
+        // Add friend counts to each user
+        const usersWithCounts = await Promise.all(
+          (data || []).map(async (userData) => {
+            const { count } = await supabase
+              .from('follows')
+              .select('*', { count: 'exact', head: true })
+              .eq('follower_id', userData.id);
+
+            return {
+              ...userData,
+              friendCount: count || 0
+            };
+          })
+        );
+
+        setUsers(usersWithCounts);
       } catch (error) {
         console.error('Error fetching users:', error);
       } finally {

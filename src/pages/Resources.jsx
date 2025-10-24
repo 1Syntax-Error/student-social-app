@@ -14,8 +14,18 @@ export default function Resources() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [resources, setResources] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
 
   const fileTypes = ['All', 'Study Guide', 'Notes', 'Past Exam', 'Tutorial', 'Other'];
+
+  // Form state
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    course: '',
+    resourceType: 'Study Guide',
+    fileUrl: ''
+  });
 
   useEffect(() => {
     fetchResources();
