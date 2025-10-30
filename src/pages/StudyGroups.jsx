@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FiUsers, FiPlus, FiSearch, FiBook, FiClock, FiMapPin, FiLoader } from 'react-icons/fi';
+import { FiUsers, FiPlus, FiSearch, FiBook, FiClock, FiMapPin, FiLoader, FiTrash2, FiX } from 'react-icons/fi';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import { useAuth } from '../contexts/AuthContext';
@@ -16,6 +16,9 @@ export default function StudyGroups() {
   const [myGroups, setMyGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState(null);
+  const [groupMembers, setGroupMembers] = useState([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -41,7 +44,7 @@ export default function StudyGroups() {
         .from('study_groups')
         .select(`
           *,
-          creator:profiles!study_groups_creator_id_fkey(username),
+          creator:profiles!study_groups_creator_id_fkey(username, university),
           members:study_group_members(count)
         `)
         .eq('is_active', true)
@@ -108,6 +111,62 @@ export default function StudyGroups() {
     }
   };
 
+  const handleDeleteGroup = async (groupId) => {
+    if (!user) return;
+
+    if (!confirm('Are you sure you want to delete this study group? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      // Set is_active to false instead of deleting
+      const { error } = await supabase
+        .from('study_groups')
+        .update({ is_active: false })
+        .eq('id', groupId)
+        .eq('creator_id', user.id);
+
+      if (error) throw error;
+
+      // Refresh the groups list
+      fetchStudyGroups();
+
+      // Close modal if open
+      if (selectedGroup?.id === groupId) {
+        setSelectedGroup(null);
+      }
+    } catch (error) {
+      console.error('Error deleting study group:', error);
+      alert('Failed to delete study group. Please try again.');
+    }
+  };
+
+  const handleViewGroup = async (group) => {
+    setSelectedGroup(group);
+    setLoadingMembers(true);
+
+    try {
+      // Fetch all members of the group
+      const { data: members, error } = await supabase
+        .from('study_group_members')
+        .select(`
+          role,
+          joined_at,
+          user:profiles!study_group_members_user_id_fkey(id, username, university, major, year_level)
+        `)
+        .eq('group_id', group.id)
+        .order('joined_at', { ascending: true });
+
+      if (error) throw error;
+
+      setGroupMembers(members || []);
+    } catch (error) {
+      console.error('Error fetching group members:', error);
+    } finally {
+      setLoadingMembers(false);
+    }
+  };
+
   const handleCreateGroup = async (e) => {
     e.preventDefault();
     if (!user) return;
@@ -127,7 +186,7 @@ export default function StudyGroups() {
             course_name: courseName,
             creator_id: user.id,
             max_members: formData.maxMembers,
-            meeting_time: formData.meetingTime || null,
+            meeting_schedule: formData.meetingTime || null,
             location: formData.location || null,
             is_active: true
           }
@@ -227,19 +286,37 @@ export default function StudyGroups() {
                 const memberCount = group.members?.[0]?.count || 0;
                 const courseFull = group.course_code && group.course_name ?
                   `${group.course_code} - ${group.course_name}` : group.course_code || group.course_name || 'No course';
+                const isCreator = user && group.creator_id === user.id;
 
                 return (
                   <div key={group.id} className="card p-4 sm:p-6">
                     <div className="flex justify-between items-start mb-4">
-                      <div className="flex-1">
-                        <h3 className="text-xl font-semibold text-gray-900 dark:text-dark-text-primary mb-1">
+                      <div
+                        className="flex-1 cursor-pointer"
+                        onClick={() => handleViewGroup(group)}
+                      >
+                        <h3 className="text-xl font-semibold text-gray-900 dark:text-dark-text-primary mb-1 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
                           {group.name}
                         </h3>
                         <p className="text-sm text-accent-teal font-medium">{courseFull}</p>
                       </div>
-                      <div className="flex items-center space-x-1 text-gray-600 dark:text-dark-text-secondary">
-                        <FiUsers />
-                        <span className="text-sm">{memberCount}/{group.max_members}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center space-x-1 text-gray-600 dark:text-dark-text-secondary">
+                          <FiUsers />
+                          <span className="text-sm">{memberCount}/{group.max_members}</span>
+                        </div>
+                        {isCreator && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteGroup(group.id);
+                            }}
+                            className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                            title="Delete group"
+                          >
+                            <FiTrash2 size={18} />
+                          </button>
+                        )}
                       </div>
                     </div>
 
@@ -264,24 +341,33 @@ export default function StudyGroups() {
                       )}
                       {group.creator && (
                         <div className="flex items-center text-gray-600 dark:text-dark-text-secondary">
-                          <FiUsers className="mr-2" />
+                          <FiBook className="mr-2" />
                           Created by {group.creator.username}
+                          {group.creator.university && ` • ${group.creator.university}`}
                         </div>
                       )}
                     </div>
 
-                    <button
-                      onClick={() => handleJoinGroup(group.id)}
-                      className={`w-full ${
-                        myGroups.includes(group.id)
-                          ? 'btn btn-secondary'
-                          : 'btn btn-primary'
-                      }`}
-                      disabled={!myGroups.includes(group.id) && memberCount >= group.max_members}
-                    >
-                      {myGroups.includes(group.id) ? 'Leave Group' :
-                       memberCount >= group.max_members ? 'Group Full' : 'Join Group'}
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleViewGroup(group)}
+                        className="btn btn-secondary flex-1"
+                      >
+                        View Members
+                      </button>
+                      <button
+                        onClick={() => handleJoinGroup(group.id)}
+                        className={`flex-1 ${
+                          myGroups.includes(group.id)
+                            ? 'btn btn-secondary'
+                            : 'btn btn-primary'
+                        }`}
+                        disabled={!myGroups.includes(group.id) && memberCount >= group.max_members}
+                      >
+                        {myGroups.includes(group.id) ? 'Leave' :
+                         memberCount >= group.max_members ? 'Full' : 'Join'}
+                      </button>
+                    </div>
                   </div>
                 );
               })}
@@ -420,6 +506,117 @@ export default function StudyGroups() {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          )}
+
+          {/* View Group Members Modal */}
+          {selectedGroup && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setSelectedGroup(null)}>
+              <div className="bg-white dark:bg-dark-surface rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <h2 className="text-2xl font-bold dark:text-dark-text-primary">{selectedGroup.name}</h2>
+                    <p className="text-sm text-accent-teal font-medium">
+                      {selectedGroup.course_code && selectedGroup.course_name ?
+                        `${selectedGroup.course_code} - ${selectedGroup.course_name}` :
+                        selectedGroup.course_code || selectedGroup.course_name || 'No course'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setSelectedGroup(null)}
+                    className="text-gray-500 hover:text-gray-700 dark:text-dark-text-secondary dark:hover:text-dark-text-primary"
+                  >
+                    <FiX size={24} />
+                  </button>
+                </div>
+
+                {selectedGroup.description && (
+                  <p className="text-gray-700 dark:text-dark-text-secondary mb-4">
+                    {selectedGroup.description}
+                  </p>
+                )}
+
+                <div className="space-y-2 mb-6 text-sm text-gray-600 dark:text-dark-text-secondary">
+                  {selectedGroup.meeting_schedule && (
+                    <div className="flex items-center">
+                      <FiClock className="mr-2" />
+                      {selectedGroup.meeting_schedule}
+                    </div>
+                  )}
+                  {selectedGroup.location && (
+                    <div className="flex items-center">
+                      <FiMapPin className="mr-2" />
+                      {selectedGroup.location}
+                    </div>
+                  )}
+                  {selectedGroup.creator && (
+                    <div className="flex items-center">
+                      <FiBook className="mr-2" />
+                      Created by {selectedGroup.creator.username}
+                      {selectedGroup.creator.university && ` • ${selectedGroup.creator.university}`}
+                    </div>
+                  )}
+                </div>
+
+                <div className="border-t border-gray-200 dark:border-dark-border pt-4">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary mb-4">
+                    Members ({groupMembers.length}/{selectedGroup.max_members})
+                  </h3>
+
+                  {loadingMembers ? (
+                    <div className="flex justify-center py-8">
+                      <FiLoader size={32} className="text-primary-500 dark:text-primary-400 animate-spin" />
+                    </div>
+                  ) : groupMembers.length === 0 ? (
+                    <p className="text-center text-gray-500 dark:text-dark-text-secondary py-8">
+                      No members yet
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {groupMembers.map((member, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-dark-border rounded-lg">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-gray-900 dark:text-dark-text-primary">
+                                {member.user?.username || 'Unknown User'}
+                              </p>
+                              {member.role === 'admin' && (
+                                <span className="badge badge-primary text-xs">Admin</span>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-600 dark:text-dark-text-secondary">
+                              {member.user?.university && <span>{member.user.university}</span>}
+                              {member.user?.major && <span> • {member.user.major}</span>}
+                              {member.user?.year_level && <span> • {member.user.year_level}</span>}
+                            </div>
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-dark-text-secondary">
+                            Joined {new Date(member.joined_at).toLocaleDateString()}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-3 mt-6">
+                  {user && selectedGroup.creator_id === user.id && (
+                    <button
+                      onClick={() => handleDeleteGroup(selectedGroup.id)}
+                      className="btn btn-secondary text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                    >
+                      <FiTrash2 className="mr-2" />
+                      Delete Group
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setSelectedGroup(null)}
+                    className="btn btn-secondary flex-1"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
           )}

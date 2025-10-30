@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiCalendar, FiMapPin, FiClock, FiUsers, FiFilter, FiPlus, FiLoader } from 'react-icons/fi';
+import { FiCalendar, FiMapPin, FiClock, FiUsers, FiFilter, FiPlus, FiLoader, FiSearch } from 'react-icons/fi';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import { useAuth } from '../contexts/AuthContext';
@@ -10,6 +10,7 @@ const categories = ['All', 'Academic', 'Career', 'Social', 'Club', 'Competition'
 export default function Events() {
   const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [searchTerm, setSearchTerm] = useState('');
   const [events, setEvents] = useState([]);
   const [myRSVPs, setMyRSVPs] = useState([]);
   const [viewMode, setViewMode] = useState('upcoming');
@@ -158,9 +159,11 @@ export default function Events() {
   };
 
   const filteredEvents = events.filter(event => {
+    const matchesSearch = event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (event.description && event.description.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesCategory = selectedCategory === 'All' || event.event_type === selectedCategory;
     const matchesView = viewMode === 'upcoming' || myRSVPs.includes(event.id);
-    return matchesCategory && matchesView;
+    return matchesSearch && matchesCategory && matchesView;
   });
 
   const sortedEvents = [...filteredEvents].sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
@@ -216,6 +219,20 @@ export default function Events() {
             </div>
           </div>
 
+          {/* Search Bar */}
+          <div className="card p-4 sm:p-6 mb-6">
+            <div className="relative">
+              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search events..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 input w-full"
+              />
+            </div>
+          </div>
+
           {/* Category Filter */}
           <div className="card p-4 sm:p-6 mb-6">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-wrap">
@@ -268,7 +285,7 @@ export default function Events() {
                         )}
                       </div>
                       <h3 className="text-xl font-semibold text-gray-900 dark:text-dark-text-primary mb-2">
-                        {event.title}
+                        {event.name}
                       </h3>
                       {event.description && (
                         <p className="text-gray-600 dark:text-dark-text-secondary text-sm mb-4">

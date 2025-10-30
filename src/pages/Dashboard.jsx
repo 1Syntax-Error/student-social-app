@@ -1,7 +1,7 @@
 // src/pages/Dashboard.jsx
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiUsers, FiSearch, FiUser, FiArrowRight, FiEdit3, FiBookOpen, FiMail, FiLinkedin, FiUserPlus, FiCalendar, FiBook, FiFile, FiAward } from 'react-icons/fi';
+import { FiUsers, FiSearch, FiUser, FiArrowRight, FiEdit3, FiBookOpen, FiMapPin, FiLinkedin, FiUserPlus, FiCalendar, FiBook, FiFile, FiAward } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../utils/supabaseClient';
 import Navbar from '../components/layout/Navbar';
@@ -219,8 +219,8 @@ export default function Dashboard() {
                     <h2 className="text-lg font-medium text-primary-700 dark:text-dark-text-primary">Profile</h2>
                     <ul className="mt-2 space-y-2">
                       <li className="flex items-center text-gray-700 dark:text-dark-text-secondary p-2 rounded-md bg-white dark:bg-dark-bg bg-opacity-60 hover:bg-primary-100 dark:hover:bg-dark-border transition-colors duration-200 shadow-sm">
-                        <FiMail className="mr-2 text-primary-600 dark:text-primary-400" />
-                        {user.email}
+                        <FiMapPin className="mr-2 text-primary-600 dark:text-primary-400" />
+                        {user.university ? user.university : <span className="text-gray-400 dark:text-gray-500">Add your university</span>}
                       </li>
                       <li className="flex items-center text-gray-700 dark:text-dark-text-secondary p-2 rounded-md bg-white dark:bg-dark-bg bg-opacity-60 hover:bg-primary-100 dark:hover:bg-dark-border transition-colors duration-200 shadow-sm">
                         <FiBookOpen className="mr-2 text-primary-600 dark:text-primary-400" />

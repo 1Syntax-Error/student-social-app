@@ -19,7 +19,7 @@ export default function FollowButton({ userId, isFollowing: initialIsFollowing, 
           .select('status')
           .eq('sender_id', user.id)
           .eq('receiver_id', userId)
-          .single();
+          .maybeSingle();
 
         if (sentRequest) {
           setRequestStatus(sentRequest.status);
@@ -30,7 +30,7 @@ export default function FollowButton({ userId, isFollowing: initialIsFollowing, 
             .select('*')
             .eq('follower_id', user.id)
             .eq('following_id', userId)
-            .single();
+            .maybeSingle();
 
           if (followData) {
             setRequestStatus('accepted');
@@ -78,7 +78,7 @@ export default function FollowButton({ userId, isFollowing: initialIsFollowing, 
         if (error) throw error;
         setRequestStatus('none');
       } else if (requestStatus === 'accepted') {
-        // Unfollow (remove follow relationship)
+        // Unfriend: remove follow relationships
         const { error } = await supabase
           .from('follows')
           .delete()
@@ -93,6 +93,12 @@ export default function FollowButton({ userId, isFollowing: initialIsFollowing, 
           .delete()
           .eq('follower_id', userId)
           .eq('following_id', user.id);
+
+        // Delete the friend request record (could be sent by either user)
+        await supabase
+          .from('friend_requests')
+          .delete()
+          .or(`and(sender_id.eq.${user.id},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${user.id})`);
 
         setRequestStatus('none');
       }
@@ -123,7 +129,7 @@ export default function FollowButton({ userId, isFollowing: initialIsFollowing, 
       disabled={isLoading || !user}
       className={`btn w-full flex items-center justify-center transition duration-200 ${
         requestStatus === 'accepted'
-          ? 'bg-primary-100 text-primary-700 border border-primary-300 hover:bg-primary-200'
+          ? 'bg-red-500 text-white border border-red-600 hover:bg-red-600'
           : requestStatus === 'pending'
           ? 'bg-yellow-100 text-yellow-700 border border-yellow-300 hover:bg-yellow-200'
           : `${colors.sidebar.bg} ${colors.text.light}`
@@ -134,7 +140,7 @@ export default function FollowButton({ userId, isFollowing: initialIsFollowing, 
       {isLoading ? (
         <span>Loading...</span>
       ) : requestStatus === 'accepted' ? (
-        <>Friends</>
+        <>Unfriend</>
       ) : requestStatus === 'pending' ? (
         <>Request Sent</>
       ) : (

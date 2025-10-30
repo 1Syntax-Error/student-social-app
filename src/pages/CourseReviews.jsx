@@ -12,6 +12,7 @@ export default function CourseReviews() {
   const [sortBy, setSortBy] = useState('recent');
   const [showWriteReview, setShowWriteReview] = useState(false);
   const [reviews, setReviews] = useState([]);
+  const [myVotes, setMyVotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -46,6 +47,15 @@ export default function CourseReviews() {
 
       if (error) throw error;
 
+      // Fetch user's votes
+      const { data: userVotes, error: votesError } = await supabase
+        .from('review_votes')
+        .select('review_id')
+        .eq('user_id', user.id);
+
+      if (votesError) throw votesError;
+
+      setMyVotes(userVotes ? userVotes.map(v => v.review_id) : []);
       setReviews(reviewsData || []);
     } catch (error) {
       console.error('Error fetching reviews:', error);
@@ -84,6 +94,39 @@ export default function CourseReviews() {
     if (difficulty <= 2) return 'text-green-600 dark:text-green-400';
     if (difficulty <= 3) return 'text-yellow-600 dark:text-yellow-400';
     return 'text-red-600 dark:text-red-400';
+  };
+
+  const handleVote = async (reviewId) => {
+    if (!user) return;
+
+    try {
+      if (myVotes.includes(reviewId)) {
+        // Remove vote
+        const { error } = await supabase
+          .from('review_votes')
+          .delete()
+          .eq('review_id', reviewId)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+        setMyVotes(myVotes.filter(id => id !== reviewId));
+      } else {
+        // Add vote
+        const { error } = await supabase
+          .from('review_votes')
+          .insert([
+            { review_id: reviewId, user_id: user.id }
+          ]);
+
+        if (error) throw error;
+        setMyVotes([...myVotes, reviewId]);
+      }
+
+      // Refresh reviews to update vote count
+      fetchReviews();
+    } catch (error) {
+      console.error('Error voting:', error);
+    }
   };
 
   const handleSubmitReview = async (e) => {
@@ -251,8 +294,15 @@ export default function CourseReviews() {
 
                         <div className="flex items-center justify-between text-sm">
                           <div className="flex items-center gap-4">
-                            <button className="flex items-center gap-1 text-gray-600 dark:text-dark-text-secondary hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
-                              <FiThumbsUp size={16} />
+                            <button
+                              onClick={() => handleVote(review.id)}
+                              className={`flex items-center gap-1 transition-colors ${
+                                myVotes.includes(review.id)
+                                  ? 'text-primary-600 dark:text-primary-400 font-semibold'
+                                  : 'text-gray-600 dark:text-dark-text-secondary hover:text-primary-600 dark:hover:text-primary-400'
+                              }`}
+                            >
+                              <FiThumbsUp size={16} className={myVotes.includes(review.id) ? 'fill-current' : ''} />
                               <span>{voteCount} helpful</span>
                             </button>
                             {review.author && (

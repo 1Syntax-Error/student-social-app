@@ -24,7 +24,7 @@ export default function Resources() {
     description: '',
     course: '',
     resourceType: 'Study Guide',
-    fileUrl: ''
+    file: null
   });
 
   useEffect(() => {
@@ -57,11 +57,79 @@ export default function Resources() {
   const filteredResources = resources.filter(resource => {
     const matchesSearch = resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (resource.description && resource.description.toLowerCase().includes(searchTerm.toLowerCase()));
-    const courseFull = resource.course_code ? resource.course_code : '';
-    const matchesCourse = !selectedCourse || courseFull === selectedCourse.split(' - ')[0];
+    const courseFull = resource.course_code && resource.course_name ?
+      `${resource.course_code} - ${resource.course_name}` : resource.course_code || '';
+    const matchesCourse = !selectedCourse || courseFull === selectedCourse;
     const matchesType = !selectedType || selectedType === 'All' || resource.resource_type === selectedType;
     return matchesSearch && matchesCourse && matchesType;
   });
+
+  const handleUploadResource = async (e) => {
+    e.preventDefault();
+    if (!user || !formData.file) return;
+
+    setUploading(true);
+    try {
+      // Parse course code and name from COURSES constant
+      const [courseCode, courseName] = formData.course ? formData.course.split(' - ') : ['', ''];
+
+      // Upload file to Supabase Storage
+      const fileExt = formData.file.name.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `resources/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('resource-files')
+        .upload(filePath, formData.file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('resource-files')
+        .getPublicUrl(filePath);
+
+      // Determine file type
+      const fileType = fileExt.toUpperCase();
+
+      // Create resource record
+      const { error: insertError } = await supabase
+        .from('resources')
+        .insert([
+          {
+            title: formData.title,
+            description: formData.description || null,
+            course_code: courseCode,
+            course_name: courseName,
+            resource_type: formData.resourceType,
+            file_url: urlData.publicUrl,
+            file_type: fileType,
+            uploader_id: user.id,
+            download_count: 0
+          }
+        ]);
+
+      if (insertError) throw insertError;
+
+      // Reset form and close modal
+      setFormData({
+        title: '',
+        description: '',
+        course: '',
+        resourceType: 'Study Guide',
+        file: null
+      });
+      setShowUploadModal(false);
+
+      // Refresh resources
+      fetchResources();
+    } catch (error) {
+      console.error('Error uploading resource:', error);
+      alert('Failed to upload resource. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const getFileIcon = (type) => {
     if (type === 'PDF' || type === 'DOCX') return <FiFileText className="text-blue-500" size={24} />;
@@ -139,47 +207,66 @@ export default function Resources() {
           </div>
 
           {/* Resources Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {filteredResources.map(resource => (
-              <div key={resource.id} className="card p-4 sm:p-6 flex flex-col">
-                <div className="flex items-start gap-3 mb-4">
-                  <div className="flex-shrink-0">
-                    {getFileIcon(resource.type)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary mb-1 truncate">
-                      {resource.title}
-                    </h3>
-                    <p className="text-sm text-accent-teal mb-1">{resource.course}</p>
-                    <p className="text-xs text-gray-500 dark:text-dark-text-secondary">
-                      {resource.type} • {resource.size}
-                    </p>
-                  </div>
-                </div>
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <FiLoader size={32} className="text-primary-500 dark:text-primary-400 animate-spin" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              {filteredResources.map(resource => {
+                const courseFull = resource.course_code && resource.course_name ?
+                  `${resource.course_code} - ${resource.course_name}` : resource.course_code || resource.course_name || 'No course';
+                const resourceTypeBadge = resource.resource_type || 'Other';
 
-                <p className="text-sm text-gray-600 dark:text-dark-text-secondary mb-4 flex-1">
-                  {resource.description}
-                </p>
+                return (
+                  <div key={resource.id} className="card p-4 sm:p-6 flex flex-col">
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className="flex-shrink-0">
+                        {getFileIcon(resource.file_type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary mb-1 truncate">
+                          {resource.title}
+                        </h3>
+                        <p className="text-sm text-accent-teal mb-1">{courseFull}</p>
+                        <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded badge badge-primary`}>
+                          {resourceTypeBadge}
+                        </span>
+                      </div>
+                    </div>
 
-                <div className="border-t border-gray-200 dark:border-dark-border pt-4 mt-auto">
-                  <div className="flex items-center justify-between text-xs text-gray-500 dark:text-dark-text-secondary mb-3">
-                    <span>By {resource.uploadedBy}</span>
-                    <span>{new Date(resource.date).toLocaleDateString()}</span>
+                    {resource.description && (
+                      <p className="text-sm text-gray-600 dark:text-dark-text-secondary mb-4 flex-1">
+                        {resource.description}
+                      </p>
+                    )}
+
+                    <div className="border-t border-gray-200 dark:border-dark-border pt-4 mt-auto">
+                      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-dark-text-secondary mb-3">
+                        <span>By {resource.uploader?.username || 'Unknown'}</span>
+                        <span>{new Date(resource.created_at).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600 dark:text-dark-text-secondary">
+                          <FiDownload className="inline mr-1" />
+                          {resource.download_count || 0} downloads
+                        </span>
+                        <a
+                          href={resource.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-primary text-sm py-1.5 px-3"
+                        >
+                          <FiDownload className="mr-1" size={14} />
+                          Download
+                        </a>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-dark-text-secondary">
-                      <FiDownload className="inline mr-1" />
-                      {resource.downloads} downloads
-                    </span>
-                    <button className="btn btn-primary text-sm py-1.5 px-3">
-                      <FiDownload className="mr-1" size={14} />
-                      Download
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
 
           {filteredResources.length === 0 && (
             <div className="card p-12 text-center">
@@ -197,20 +284,113 @@ export default function Resources() {
             </div>
           )}
 
-          {/* Upload Modal Placeholder */}
+          {/* Upload Resource Modal */}
           {showUploadModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-              <div className="bg-white dark:bg-dark-surface rounded-lg p-6 max-w-md w-full">
-                <h2 className="text-2xl font-bold mb-4 dark:text-dark-text-primary">Upload Resource</h2>
-                <p className="text-gray-600 dark:text-dark-text-secondary mb-4">
-                  This feature will allow you to upload study materials, notes, and other educational resources to share with classmates.
-                </p>
-                <button
-                  onClick={() => setShowUploadModal(false)}
-                  className="btn btn-primary w-full"
-                >
-                  Close
-                </button>
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowUploadModal(false)}>
+              <div className="bg-white dark:bg-dark-surface rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <h2 className="text-2xl font-bold mb-6 dark:text-dark-text-primary">Upload Resource</h2>
+
+                <form onSubmit={handleUploadResource} className="space-y-4">
+                  {/* Resource Title */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                      Title *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      className="input w-full"
+                      placeholder="e.g., CS 101 Final Exam Study Guide"
+                    />
+                  </div>
+
+                  {/* Course Selection */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                      Course *
+                    </label>
+                    <select
+                      required
+                      value={formData.course}
+                      onChange={(e) => setFormData({ ...formData, course: e.target.value })}
+                      className="input w-full"
+                    >
+                      <option value="">Select a course</option>
+                      {COURSES.map(course => (
+                        <option key={course} value={course}>{course}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Resource Type */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                      Resource Type *
+                    </label>
+                    <select
+                      required
+                      value={formData.resourceType}
+                      onChange={(e) => setFormData({ ...formData, resourceType: e.target.value })}
+                      className="input w-full"
+                    >
+                      {fileTypes.filter(t => t !== 'All').map(type => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      className="input w-full"
+                      rows="3"
+                      placeholder="Brief description of the resource..."
+                    />
+                  </div>
+
+                  {/* File Upload */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                      File *
+                    </label>
+                    <input
+                      type="file"
+                      required
+                      onChange={(e) => setFormData({ ...formData, file: e.target.files[0] })}
+                      className="input w-full"
+                      accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.zip"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-dark-text-secondary mt-1">
+                      Accepted formats: PDF, DOC, DOCX, PPT, PPTX, TXT, ZIP
+                    </p>
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowUploadModal(false)}
+                      className="btn btn-secondary flex-1"
+                      disabled={uploading}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn btn-primary flex-1"
+                      disabled={uploading}
+                    >
+                      {uploading ? 'Uploading...' : 'Upload Resource'}
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           )}
