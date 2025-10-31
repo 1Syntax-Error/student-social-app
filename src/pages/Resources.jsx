@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiFile, FiDownload, FiUpload, FiSearch, FiFilter, FiFolder, FiFileText, FiImage, FiLoader } from 'react-icons/fi';
+import { FiFile, FiDownload, FiUpload, FiSearch, FiFilter, FiFolder, FiFileText, FiImage, FiLoader, FiTrash2 } from 'react-icons/fi';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,6 +23,7 @@ export default function Resources() {
     title: '',
     description: '',
     course: '',
+    customCourse: '',
     resourceType: 'Study Guide',
     file: null
   });
@@ -57,12 +58,74 @@ export default function Resources() {
   const filteredResources = resources.filter(resource => {
     const matchesSearch = resource.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (resource.description && resource.description.toLowerCase().includes(searchTerm.toLowerCase()));
-    const courseFull = resource.course_code && resource.course_name ?
-      `${resource.course_code} - ${resource.course_name}` : resource.course_code || '';
-    const matchesCourse = !selectedCourse || courseFull === selectedCourse;
+    const matchesCourse = !selectedCourse || resource.course_code === selectedCourse;
     const matchesType = !selectedType || selectedType === 'All' || resource.resource_type === selectedType;
     return matchesSearch && matchesCourse && matchesType;
   });
+
+  const handleDeleteResource = async (resourceId) => {
+    if (!user) return;
+
+    if (!confirm('Are you sure you want to delete this resource? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      // First, get the resource details to check for file
+      const { data: resource, error: fetchError } = await supabase
+        .from('resources')
+        .select('file_url, uploader_id')
+        .eq('id', resourceId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Check if user is the uploader
+      if (resource.uploader_id !== user.id) {
+        alert('You can only delete resources you uploaded.');
+        return;
+      }
+
+      // If resource has a file, delete it from storage
+      if (resource.file_url) {
+        try {
+          // Extract file path from the URL
+          // URL format: https://{project}.supabase.co/storage/v1/object/public/resources/{path}
+          const urlParts = resource.file_url.split('/storage/v1/object/public/resources/');
+          if (urlParts.length > 1) {
+            const filePath = urlParts[1];
+
+            const { error: storageError } = await supabase.storage
+              .from('resources')
+              .remove([filePath]);
+
+            if (storageError) {
+              console.error('Error deleting file from storage:', storageError);
+              // Continue with resource deletion even if file deletion fails
+            }
+          }
+        } catch (storageError) {
+          console.error('Error parsing file URL:', storageError);
+          // Continue with resource deletion even if file deletion fails
+        }
+      }
+
+      // Delete the resource record from the database
+      const { error: deleteError } = await supabase
+        .from('resources')
+        .delete()
+        .eq('id', resourceId)
+        .eq('uploader_id', user.id);
+
+      if (deleteError) throw deleteError;
+
+      // Refresh the resources list
+      fetchResources();
+    } catch (error) {
+      console.error('Error deleting resource:', error);
+      alert('Failed to delete resource. Please try again.');
+    }
+  };
 
   const handleUploadResource = async (e) => {
     e.preventDefault();
@@ -70,27 +133,23 @@ export default function Resources() {
 
     setUploading(true);
     try {
-      // Parse course code and name from COURSES constant
-      const [courseCode, courseName] = formData.course ? formData.course.split(' - ') : ['', ''];
+      // Use custom course if "Other" is selected, otherwise use the selected course
+      const courseCode = formData.course === 'Other' ? formData.customCourse : formData.course;
 
       // Upload file to Supabase Storage
       const fileExt = formData.file.name.split('.').pop();
-      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `resources/${fileName}`;
+      const fileName = `${user.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('resource-files')
-        .upload(filePath, formData.file);
+        .from('resources')
+        .upload(fileName, formData.file);
 
       if (uploadError) throw uploadError;
 
       // Get public URL
       const { data: urlData } = supabase.storage
-        .from('resource-files')
-        .getPublicUrl(filePath);
-
-      // Determine file type
-      const fileType = fileExt.toUpperCase();
+        .from('resources')
+        .getPublicUrl(fileName);
 
       // Create resource record
       const { error: insertError } = await supabase
@@ -100,12 +159,10 @@ export default function Resources() {
             title: formData.title,
             description: formData.description || null,
             course_code: courseCode,
-            course_name: courseName,
             resource_type: formData.resourceType,
             file_url: urlData.publicUrl,
-            file_type: fileType,
             uploader_id: user.id,
-            download_count: 0
+            downloads_count: 0
           }
         ]);
 
@@ -116,6 +173,7 @@ export default function Resources() {
         title: '',
         description: '',
         course: '',
+        customCourse: '',
         resourceType: 'Study Guide',
         file: null
       });
@@ -131,10 +189,14 @@ export default function Resources() {
     }
   };
 
-  const getFileIcon = (type) => {
-    if (type === 'PDF' || type === 'DOCX') return <FiFileText className="text-blue-500" size={24} />;
-    if (type === 'ZIP') return <FiFolder className="text-yellow-500" size={24} />;
-    if (type === 'Image') return <FiImage className="text-green-500" size={24} />;
+  const getFileIcon = (fileUrl) => {
+    if (!fileUrl) return <FiFile className="text-gray-500" size={24} />;
+
+    const ext = fileUrl.split('.').pop()?.toUpperCase();
+
+    if (ext === 'PDF' || ext === 'DOC' || ext === 'DOCX') return <FiFileText className="text-blue-500" size={24} />;
+    if (ext === 'ZIP') return <FiFolder className="text-yellow-500" size={24} />;
+    if (ext === 'PNG' || ext === 'JPG' || ext === 'JPEG' || ext === 'GIF') return <FiImage className="text-green-500" size={24} />;
     return <FiFile className="text-gray-500" size={24} />;
   };
 
@@ -214,24 +276,37 @@ export default function Resources() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {filteredResources.map(resource => {
-                const courseFull = resource.course_code && resource.course_name ?
-                  `${resource.course_code} - ${resource.course_name}` : resource.course_code || resource.course_name || 'No course';
+                const courseDisplay = resource.course_code || 'No course';
                 const resourceTypeBadge = resource.resource_type || 'Other';
+                const isUploader = user && resource.uploader_id === user.id;
 
                 return (
                   <div key={resource.id} className="card p-4 sm:p-6 flex flex-col">
                     <div className="flex items-start gap-3 mb-4">
                       <div className="flex-shrink-0">
-                        {getFileIcon(resource.file_type)}
+                        {getFileIcon(resource.file_url)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary mb-1 truncate">
-                          {resource.title}
-                        </h3>
-                        <p className="text-sm text-accent-teal mb-1">{courseFull}</p>
-                        <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded badge badge-primary`}>
-                          {resourceTypeBadge}
-                        </span>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary mb-1 truncate">
+                              {resource.title}
+                            </h3>
+                            <p className="text-sm text-accent-teal mb-1">{courseDisplay}</p>
+                            <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded badge badge-primary`}>
+                              {resourceTypeBadge}
+                            </span>
+                          </div>
+                          {isUploader && (
+                            <button
+                              onClick={() => handleDeleteResource(resource.id)}
+                              className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors flex-shrink-0"
+                              title="Delete resource"
+                            >
+                              <FiTrash2 size={18} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -249,7 +324,7 @@ export default function Resources() {
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-600 dark:text-dark-text-secondary">
                           <FiDownload className="inline mr-1" />
-                          {resource.download_count || 0} downloads
+                          {resource.downloads_count || 0} downloads
                         </span>
                         <a
                           href={resource.file_url}
@@ -314,15 +389,33 @@ export default function Resources() {
                     <select
                       required
                       value={formData.course}
-                      onChange={(e) => setFormData({ ...formData, course: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, course: e.target.value, customCourse: '' })}
                       className="input w-full"
                     >
                       <option value="">Select a course</option>
                       {COURSES.map(course => (
                         <option key={course} value={course}>{course}</option>
                       ))}
+                      <option value="Other">Other (Type your own)</option>
                     </select>
                   </div>
+
+                  {/* Custom Course Input - shown when "Other" is selected */}
+                  {formData.course === 'Other' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                        Enter Course Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.customCourse}
+                        onChange={(e) => setFormData({ ...formData, customCourse: e.target.value })}
+                        className="input w-full"
+                        placeholder="e.g., CHEM 202 - Organic Chemistry"
+                      />
+                    </div>
+                  )}
 
                   {/* Resource Type */}
                   <div>

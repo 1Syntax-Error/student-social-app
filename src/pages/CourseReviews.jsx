@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiStar, FiThumbsUp, FiMessageSquare, FiBook, FiFilter, FiLoader } from 'react-icons/fi';
+import { FiStar, FiThumbsUp, FiMessageSquare, FiBook, FiFilter, FiLoader, FiTrash2 } from 'react-icons/fi';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import { useAuth } from '../contexts/AuthContext';
@@ -19,6 +19,7 @@ export default function CourseReviews() {
   // Form state
   const [formData, setFormData] = useState({
     course: '',
+    customCourse: '',
     rating: 5,
     difficulty: 3,
     workload: '',
@@ -129,14 +130,48 @@ export default function CourseReviews() {
     }
   };
 
+  const handleDeleteReview = async (reviewId) => {
+    if (!user) return;
+
+    if (!confirm('Are you sure you want to delete this review? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      // Delete the review from the database
+      const { error } = await supabase
+        .from('course_reviews')
+        .delete()
+        .eq('id', reviewId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      // Refresh the reviews list
+      fetchReviews();
+    } catch (error) {
+      console.error('Error deleting review:', error);
+      alert('Failed to delete review. Please try again.');
+    }
+  };
+
   const handleSubmitReview = async (e) => {
     e.preventDefault();
     if (!user) return;
 
     setSubmitting(true);
     try {
-      // Parse course code and name from COURSES constant
-      const [courseCode, courseName] = formData.course ? formData.course.split(' - ') : ['', ''];
+      // Use custom course if "Other" is selected, otherwise parse from dropdown
+      let courseCode, courseName;
+
+      if (formData.course === 'Other') {
+        // Use custom course input
+        courseCode = formData.customCourse;
+        courseName = '';
+      } else {
+        // Parse course code and name from COURSES constant
+        [courseCode, courseName] = formData.course ? formData.course.split(' - ') : ['', ''];
+      }
 
       const { error } = await supabase
         .from('course_reviews')
@@ -159,6 +194,7 @@ export default function CourseReviews() {
       // Reset form and close modal
       setFormData({
         course: '',
+        customCourse: '',
         rating: 5,
         difficulty: 3,
         workload: '',
@@ -250,6 +286,7 @@ export default function CourseReviews() {
                   `${review.course_code} - ${review.course_name}` : review.course_code || review.course_name || 'Unknown Course';
                 const voteCount = review.votes?.[0]?.count || 0;
                 const semesterYear = review.semester && review.year ? `${review.semester} ${review.year}` : review.semester || review.year || '';
+                const isAuthor = user && review.user_id === user.id;
 
                 return (
                   <div key={review.id} className="card p-4 sm:p-6">
@@ -276,14 +313,27 @@ export default function CourseReviews() {
                       {/* Review Content */}
                       <div className="flex-1">
                         <div className="mb-3">
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary">
-                            {courseFull}
-                          </h3>
-                          <p className="text-sm text-gray-600 dark:text-dark-text-secondary">
-                            {review.professor_name && `${review.professor_name} • `}
-                            {semesterYear}
-                            {review.workload && ` • Workload: ${review.workload}`}
-                          </p>
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h3 className="text-lg font-semibold text-gray-900 dark:text-dark-text-primary">
+                                {courseFull}
+                              </h3>
+                              <p className="text-sm text-gray-600 dark:text-dark-text-secondary">
+                                {review.professor_name && `${review.professor_name} • `}
+                                {semesterYear}
+                                {review.workload && ` • Workload: ${review.workload}`}
+                              </p>
+                            </div>
+                            {isAuthor && (
+                              <button
+                                onClick={() => handleDeleteReview(review.id)}
+                                className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                                title="Delete review"
+                              >
+                                <FiTrash2 size={18} />
+                              </button>
+                            )}
+                          </div>
                         </div>
 
                         {review.review_text && (
@@ -354,15 +404,33 @@ export default function CourseReviews() {
                     <select
                       required
                       value={formData.course}
-                      onChange={(e) => setFormData({ ...formData, course: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, course: e.target.value, customCourse: '' })}
                       className="input w-full"
                     >
                       <option value="">Select a course</option>
                       {COURSES.map(course => (
                         <option key={course} value={course}>{course}</option>
                       ))}
+                      <option value="Other">Other (Type your own)</option>
                     </select>
                   </div>
+
+                  {/* Custom Course Input - shown when "Other" is selected */}
+                  {formData.course === 'Other' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                        Enter Course Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.customCourse}
+                        onChange={(e) => setFormData({ ...formData, customCourse: e.target.value })}
+                        className="input w-full"
+                        placeholder="e.g., PHYS 301 - Quantum Mechanics"
+                      />
+                    </div>
+                  )}
 
                   {/* Overall Rating */}
                   <div>

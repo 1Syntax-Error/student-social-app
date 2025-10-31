@@ -78,29 +78,30 @@ export default function FollowButton({ userId, isFollowing: initialIsFollowing, 
         if (error) throw error;
         setRequestStatus('none');
       } else if (requestStatus === 'accepted') {
-        // Unfriend: remove follow relationships
-        const { error } = await supabase
+        // Unfriend: remove BOTH follow relationships using OR condition
+        // This deletes both directions in a single query
+        const { error: unfriendError } = await supabase
           .from('follows')
           .delete()
-          .eq('follower_id', user.id)
-          .eq('following_id', userId);
+          .or(`and(follower_id.eq.${user.id},following_id.eq.${userId}),and(follower_id.eq.${userId},following_id.eq.${user.id})`);
 
-        if (error) throw error;
-
-        // Also remove the reverse follow
-        await supabase
-          .from('follows')
-          .delete()
-          .eq('follower_id', userId)
-          .eq('following_id', user.id);
+        if (unfriendError) {
+          console.error('Error unfriending:', unfriendError);
+        }
 
         // Delete the friend request record (could be sent by either user)
-        await supabase
+        const { error: requestDeleteError } = await supabase
           .from('friend_requests')
           .delete()
           .or(`and(sender_id.eq.${user.id},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${user.id})`);
 
-        setRequestStatus('none');
+        if (requestDeleteError) {
+          console.error('Error deleting friend request:', requestDeleteError);
+        }
+
+        // Refresh the page to update the UI
+        window.location.reload();
+        return; // Exit early since we're reloading
       }
 
       onFollowToggle && onFollowToggle();

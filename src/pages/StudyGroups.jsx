@@ -25,6 +25,7 @@ export default function StudyGroups() {
     name: '',
     description: '',
     course: '',
+    customCourse: '',
     maxMembers: 10,
     meetingTime: '',
     location: ''
@@ -119,10 +120,10 @@ export default function StudyGroups() {
     }
 
     try {
-      // Set is_active to false instead of deleting
+      // Actually delete the record from the database
       const { error } = await supabase
         .from('study_groups')
-        .update({ is_active: false })
+        .delete()
         .eq('id', groupId)
         .eq('creator_id', user.id);
 
@@ -173,8 +174,17 @@ export default function StudyGroups() {
 
     setCreating(true);
     try {
-      // Parse course code and name from COURSES constant
-      const [courseCode, courseName] = formData.course ? formData.course.split(' - ') : ['', ''];
+      // Use custom course if "Other" is selected, otherwise parse from dropdown
+      let courseCode, courseName;
+
+      if (formData.course === 'Other') {
+        // Use custom course input
+        courseCode = formData.customCourse;
+        courseName = '';
+      } else {
+        // Parse course code and name from COURSES constant
+        [courseCode, courseName] = formData.course ? formData.course.split(' - ') : ['', ''];
+      }
 
       const { data: newGroup, error } = await supabase
         .from('study_groups')
@@ -208,6 +218,7 @@ export default function StudyGroups() {
         name: '',
         description: '',
         course: '',
+        customCourse: '',
         maxMembers: 10,
         meetingTime: '',
         location: ''
@@ -420,15 +431,33 @@ export default function StudyGroups() {
                     <select
                       required
                       value={formData.course}
-                      onChange={(e) => setFormData({ ...formData, course: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, course: e.target.value, customCourse: '' })}
                       className="input w-full"
                     >
                       <option value="">Select a course</option>
                       {COURSES.map(course => (
                         <option key={course} value={course}>{course}</option>
                       ))}
+                      <option value="Other">Other (Type your own)</option>
                     </select>
                   </div>
+
+                  {/* Custom Course Input - shown when "Other" is selected */}
+                  {formData.course === 'Other' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-dark-text-primary mb-2">
+                        Enter Course Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.customCourse}
+                        onChange={(e) => setFormData({ ...formData, customCourse: e.target.value })}
+                        className="input w-full"
+                        placeholder="e.g., MATH 201 - Linear Algebra"
+                      />
+                    </div>
+                  )}
 
                   {/* Description */}
                   <div>

@@ -15,6 +15,7 @@ export default function Dashboard() {
   const [suggestedUsers, setSuggestedUsers] = useState([]);
   const [friends, setFriends] = useState([]);
   const [friendCount, setFriendCount] = useState(0);
+  const [pendingRequestCount, setPendingRequestCount] = useState(0);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
@@ -33,6 +34,15 @@ export default function Dashboard() {
         const friendIds = friendsData ? friendsData.map(f => f.following_id) : [];
         setFriends(friendIds);
         setFriendCount(friendIds.length);
+
+        // Fetch pending friend request count
+        const { count: pendingCount } = await supabase
+          .from('friend_requests')
+          .select('*', { count: 'exact', head: true })
+          .eq('receiver_id', user.id)
+          .eq('status', 'pending');
+
+        setPendingRequestCount(pendingCount || 0);
 
         // Helper function to add friend counts to users
         const addFriendCounts = async (users) => {
@@ -256,11 +266,16 @@ export default function Dashboard() {
                         </span>
                       </Link>
                       <button
-                        className="bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-md shadow-sm flex items-center justify-center space-x-1.5 transition-colors duration-200"
+                        className="bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-md shadow-sm flex items-center justify-center space-x-1.5 transition-colors duration-200 relative"
                         onClick={() => navigate('/pending-requests')}
                       >
                         <FiUserPlus className="text-base" />
                         <span className="text-sm font-medium whitespace-nowrap">Friend Requests</span>
+                        {pendingRequestCount > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center shadow-md">
+                            {pendingRequestCount}
+                          </span>
+                        )}
                       </button>
                     </div>
                     
