@@ -10,6 +10,19 @@ import { supabase } from '../utils/supabaseClient';
 export default function Home() {
   const { user } = useAuth();
   const [totalUsers, setTotalUsers] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if mobile on mount and resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Fetch total user count from profiles table
   useEffect(() => {
@@ -40,15 +53,15 @@ export default function Home() {
         {/* Hero section */}
         <div className="bg-gradient-to-br from-primary-600 to-primary-800 dark:from-primary-700 dark:to-primary-900 text-white py-16 relative">
           {/* Mechanical Counter - Top Right */}
-          <div className="absolute top-8 right-8 flex flex-col items-center gap-3">
-            <div className="bg-gray-800 p-4 rounded-xl shadow-2xl border border-gray-700">
+          <div className="absolute top-4 right-4 sm:top-8 sm:right-8 flex flex-col items-center gap-2 sm:gap-3">
+            <div className="bg-gray-800 p-2 sm:p-4 rounded-lg sm:rounded-xl shadow-2xl border border-gray-700">
               {/* Counter display */}
-              <div className="flex gap-2">
+              <div className="flex gap-1 sm:gap-2">
                 {String(totalUsers).padStart(4, '0').split('').map((digit, index) => (
                   <div
                     key={index}
                     className="relative bg-black rounded-md overflow-hidden shadow-inner"
-                    style={{ width: '45px', height: '60px' }}
+                    style={{ width: isMobile ? '24px' : '45px', height: isMobile ? '32px' : '60px' }}
                   >
                     {/* Top shadow for depth */}
                     <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-black/40 to-transparent pointer-events-none z-10"></div>
@@ -58,7 +71,7 @@ export default function Home() {
 
                     {/* Number */}
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-4xl font-bold text-white" style={{ fontFamily: 'Arial Black, sans-serif' }}>
+                      <span className={`${isMobile ? 'text-lg' : 'text-4xl'} font-bold text-white`} style={{ fontFamily: 'Arial Black, sans-serif' }}>
                         {digit}
                       </span>
                     </div>
@@ -90,10 +103,10 @@ export default function Home() {
                       Go to Dashboard
                     </Link>
                     <Link
-                      to="/explore"
+                      to="/feeds"
                       className={`btn ${colors.sidebar.bg} ${colors.text.light} hover:bg-primary-700`}
                     >
-                      Explore Students
+                      Activity Feed
                     </Link>
                   </div>
                 ) : (

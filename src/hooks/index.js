@@ -6,3 +6,4 @@ export * from './useStudyGroups';
 export * from './useEvents';
 export * from './useCourseReviews';
 export * from './useResources';
+export * from './useFeeds';

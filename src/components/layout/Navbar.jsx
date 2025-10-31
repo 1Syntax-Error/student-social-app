@@ -89,6 +89,12 @@ export default function Navbar() {
                         Explore
                       </Link>
                       <Link
+                        to="/feeds"
+                        className="block px-4 py-2 text-sm text-gray-700 dark:text-dark-text-primary hover:bg-gray-100 dark:hover:bg-dark-border"
+                      >
+                        Activity Feed
+                      </Link>
+                      <Link
                         to="/edit-profile"
                         className="block px-4 py-2 text-sm text-gray-700 dark:text-dark-text-primary hover:bg-gray-100 dark:hover:bg-dark-border"
                       >
@@ -141,6 +147,12 @@ export default function Navbar() {
                   className={`block py-2 px-4 text-base font-medium text-gray-700 dark:text-dark-text-primary hover:bg-gray-100 dark:hover:bg-dark-border`}
                 >
                   Explore
+                </Link>
+                <Link
+                  to="/feeds"
+                  className={`block py-2 px-4 text-base font-medium text-gray-700 dark:text-dark-text-primary hover:bg-gray-100 dark:hover:bg-dark-border`}
+                >
+                  Activity Feed
                 </Link>
                 <Link
                   to="/edit-profile"
