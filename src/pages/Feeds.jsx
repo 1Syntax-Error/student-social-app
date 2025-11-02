@@ -1,16 +1,26 @@
 import { Link } from 'react-router-dom';
-import { FiUsers, FiCalendar, FiBook, FiFile, FiStar, FiLoader, FiTrendingUp, FiHeart } from 'react-icons/fi';
+import { FiUsers, FiCalendar, FiBook, FiFile, FiStar, FiLoader, FiTrendingUp, FiHeart, FiMessageSquare } from 'react-icons/fi';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
+import CreatePost from '../components/social/CreatePost';
+import PostInteractions from '../components/social/PostInteractions';
 import { useAuth } from '../contexts/AuthContext';
 import { useActivityFeed } from '../hooks/useFeeds';
+import { useQueryClient } from '@tanstack/react-query';
+import { feedKeys } from '../hooks/useFeeds';
 
 export default function Feeds() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { data, isLoading: loading } = useActivityFeed(user?.id);
 
   const personalizedFeed = data?.personalizedFeed || [];
   const globalFeed = data?.globalFeed || [];
+
+  const handlePostCreated = () => {
+    // Invalidate and refetch the feed when a new post is created
+    queryClient.invalidateQueries({ queryKey: feedKeys.feed(user?.id) });
+  };
 
   const renderFeedItem = (item) => {
     const timeAgo = getTimeAgo(item.timestamp);
@@ -242,6 +252,67 @@ export default function Feeds() {
           </Link>
         );
 
+      case 'post':
+        return (
+          <div
+            key={item.id}
+            className="card p-4"
+          >
+            <div className="flex items-start gap-3 mb-3">
+              <div className="flex-shrink-0">
+                {item.data.user?.profile_image_url ? (
+                  <img
+                    src={item.data.user.profile_image_url}
+                    alt={item.data.user.username}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white text-sm">
+                    {item.data.user?.username?.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-dark-text-primary">
+                    {item.data.user?.full_name || item.data.user?.username || 'Someone'}
+                  </p>
+                  <span className="text-xs text-gray-500 dark:text-dark-text-secondary">
+                    @{item.data.user?.username}
+                  </span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">
+                    • {timeAgo}
+                  </span>
+                </div>
+                <p className="text-gray-800 dark:text-dark-text-primary whitespace-pre-wrap break-words leading-relaxed">
+                  {item.data.content}
+                </p>
+
+                {/* Post Image */}
+                {item.data.image_url && (
+                  <div className="mt-3 rounded-lg overflow-hidden border border-gray-200 dark:border-dark-border">
+                    <img
+                      src={item.data.image_url}
+                      alt="Post attachment"
+                      className="w-full max-h-96 object-contain bg-gray-100 dark:bg-dark-bg"
+                    />
+                  </div>
+                )}
+
+                {/* Post Interactions */}
+                <PostInteractions
+                  postId={item.data.id}
+                  postUserId={item.data.user_id}
+                  postContent={item.data.content}
+                  initialCounts={item.data.interactionCounts}
+                  onInteractionUpdate={() => queryClient.invalidateQueries({ queryKey: feedKeys.feed(user?.id) })}
+                  onEdit={() => queryClient.invalidateQueries({ queryKey: feedKeys.feed(user?.id) })}
+                />
+              </div>
+            </div>
+          </div>
+        );
+
       default:
         return null;
     }
@@ -272,6 +343,9 @@ export default function Feeds() {
               Stay updated with the latest activity from your friends and the community
             </p>
           </div>
+
+          {/* Create Post */}
+          {user && <CreatePost onPostCreated={handlePostCreated} />}
 
           {loading ? (
             <div className="flex justify-center items-center py-12">

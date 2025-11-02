@@ -22,7 +22,7 @@ export function useActivityFeed(userId) {
       const friendIds = friendsData ? friendsData.map(f => f.following_id) : [];
 
       // Fetch all recent activity in parallel
-      const [studyGroupsRes, eventsRes, reviewsRes, resourcesRes] = await Promise.all([
+      const [studyGroupsRes, eventsRes, reviewsRes, resourcesRes, postsRes] = await Promise.all([
         // Study groups
         supabase
           .from('study_groups')
@@ -66,8 +66,8 @@ export function useActivityFeed(userId) {
             rating,
             review_text,
             created_at,
-            reviewer_id,
-            reviewer:profiles!course_reviews_reviewer_id_fkey(username, university, profile_image_url)
+            user_id,
+            reviewer:profiles!course_reviews_user_id_fkey(username, university, profile_image_url)
           `)
           .order('created_at', { ascending: false })
           .limit(20),
@@ -80,13 +80,26 @@ export function useActivityFeed(userId) {
             title,
             resource_type,
             course_code,
-            course_name,
             created_at,
             uploader_id,
-            uploader:profiles!resources_uploader_id_fkey(username, university, profile_image_url)
+            uploader:profiles(username, university, profile_image_url)
           `)
           .order('created_at', { ascending: false })
-          .limit(20)
+          .limit(20),
+
+        // Posts
+        supabase
+          .from('posts')
+          .select(`
+            id,
+            content,
+            image_url,
+            created_at,
+            user_id,
+            user:profiles!posts_user_id_fkey(username, university, profile_image_url, full_name)
+          `)
+          .order('created_at', { ascending: false })
+          .limit(30)
       ]);
 
       const feedItems = [];
@@ -127,8 +140,8 @@ export function useActivityFeed(userId) {
             type: 'review',
             data: review,
             timestamp: new Date(review.created_at),
-            userId: review.reviewer_id,
-            isFriend: friendIds.includes(review.reviewer_id)
+            userId: review.user_id,
+            isFriend: friendIds.includes(review.user_id)
           });
         });
       }
@@ -145,6 +158,40 @@ export function useActivityFeed(userId) {
             isFriend: friendIds.includes(resource.uploader_id)
           });
         });
+      }
+
+      // Process posts with interaction counts
+      if (postsRes.data) {
+        // Get detailed counts per post
+        const getCountsForPost = async (postId) => {
+          const [likes, dislikes, comments] = await Promise.all([
+            supabase.from('post_likes').select('*', { count: 'exact', head: true }).eq('post_id', postId).eq('reaction_type', 'like'),
+            supabase.from('post_likes').select('*', { count: 'exact', head: true }).eq('post_id', postId).eq('reaction_type', 'dislike'),
+            supabase.from('post_comments').select('*', { count: 'exact', head: true }).eq('post_id', postId)
+          ]);
+
+          return {
+            likes: likes.count || 0,
+            dislikes: dislikes.count || 0,
+            comments: comments.count || 0
+          };
+        };
+
+        for (const post of postsRes.data) {
+          const counts = await getCountsForPost(post.id);
+
+          feedItems.push({
+            id: `post-${post.id}`,
+            type: 'post',
+            data: {
+              ...post,
+              interactionCounts: counts
+            },
+            timestamp: new Date(post.created_at),
+            userId: post.user_id,
+            isFriend: friendIds.includes(post.user_id)
+          });
+        }
       }
 
       // Sort all feed items by timestamp

@@ -1,7 +1,7 @@
 // src/pages/Dashboard.jsx
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiUsers, FiSearch, FiUser, FiArrowRight, FiEdit3, FiBookOpen, FiMapPin, FiLinkedin, FiUserPlus, FiCalendar, FiBook, FiFile, FiAward, FiActivity, FiMessageCircle, FiTrendingUp, FiClock, FiStar } from 'react-icons/fi';
+import { FiUsers, FiSearch, FiUser, FiArrowRight, FiEdit3, FiBookOpen, FiMapPin, FiLinkedin, FiUserPlus, FiCalendar, FiBook, FiFile, FiAward, FiActivity, FiMessageCircle, FiTrendingUp, FiClock, FiStar, FiMessageSquare, FiThumbsUp, FiShare2 } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../utils/supabaseClient';
 import Navbar from '../components/layout/Navbar';
@@ -210,24 +210,144 @@ export default function Dashboard() {
           resourcesCount: resourcesResult.count || 0
         });
 
-        // Fetch recent activity (posts and comments from friends)
+        // Fetch recent activity (posts, study groups, events, reviews, resources from friends)
         if (friendIds.length > 0) {
-          const { data: recentPosts } = await supabase
-            .from('posts')
-            .select('*, profiles!posts_user_id_fkey(*)')
-            .in('user_id', friendIds)
-            .order('created_at', { ascending: false })
-            .limit(5);
+          const [postsData, studyGroupsData, eventsData, reviewsData, resourcesData] = await Promise.all([
+            // Posts
+            supabase
+              .from('posts')
+              .select('id, content, image_url, created_at, user_id, user:profiles!posts_user_id_fkey(*)')
+              .in('user_id', friendIds)
+              .order('created_at', { ascending: false })
+              .limit(10),
 
-          if (recentPosts) {
-            setRecentActivity(recentPosts.map(post => ({
-              type: 'post',
-              user: post.profiles,
-              content: post.content,
-              created_at: post.created_at,
-              id: post.id
-            })));
+            // Study groups
+            supabase
+              .from('study_groups')
+              .select('*, creator:profiles!study_groups_creator_id_fkey(*)')
+              .in('creator_id', friendIds)
+              .eq('is_active', true)
+              .order('created_at', { ascending: false })
+              .limit(10),
+
+            // Events
+            supabase
+              .from('events')
+              .select('*, creator:profiles!events_creator_id_fkey(*)')
+              .in('creator_id', friendIds)
+              .eq('is_active', true)
+              .order('created_at', { ascending: false })
+              .limit(10),
+
+            // Reviews
+            supabase
+              .from('course_reviews')
+              .select('*, reviewer:profiles!course_reviews_user_id_fkey(*)')
+              .in('user_id', friendIds)
+              .order('created_at', { ascending: false })
+              .limit(10),
+
+            // Resources
+            supabase
+              .from('resources')
+              .select('*, uploader:profiles(*)')
+              .in('uploader_id', friendIds)
+              .order('created_at', { ascending: false })
+              .limit(10)
+          ]);
+
+          // Combine all activities
+          const activities = [];
+
+          // Add posts with interaction counts
+          if (postsData.data) {
+            for (const post of postsData.data) {
+              // Fetch interaction counts for each post
+              const [likes, dislikes, comments, shares] = await Promise.all([
+                supabase.from('post_likes').select('*', { count: 'exact', head: true }).eq('post_id', post.id).eq('reaction_type', 'like'),
+                supabase.from('post_likes').select('*', { count: 'exact', head: true }).eq('post_id', post.id).eq('reaction_type', 'dislike'),
+                supabase.from('post_comments').select('*', { count: 'exact', head: true }).eq('post_id', post.id),
+                supabase.from('post_shares').select('*', { count: 'exact', head: true }).eq('post_id', post.id)
+              ]);
+
+              activities.push({
+                type: 'post',
+                user: post.user,
+                content: post.content,
+                created_at: post.created_at,
+                id: `post-${post.id}`,
+                data: {
+                  ...post,
+                  interactionCounts: {
+                    likes: likes.count || 0,
+                    dislikes: dislikes.count || 0,
+                    comments: comments.count || 0,
+                    shares: shares.count || 0
+                  }
+                }
+              });
+            }
           }
+
+          // Add study groups
+          if (studyGroupsData.data) {
+            studyGroupsData.data.forEach(group => {
+              activities.push({
+                type: 'study_group',
+                user: group.creator,
+                content: `Created a new study group: ${group.name}`,
+                created_at: group.created_at,
+                id: `group-${group.id}`,
+                data: group
+              });
+            });
+          }
+
+          // Add events
+          if (eventsData.data) {
+            eventsData.data.forEach(event => {
+              activities.push({
+                type: 'event',
+                user: event.creator,
+                content: `Created a new event: ${event.title}`,
+                created_at: event.created_at,
+                id: `event-${event.id}`,
+                data: event
+              });
+            });
+          }
+
+          // Add reviews
+          if (reviewsData.data) {
+            reviewsData.data.forEach(review => {
+              activities.push({
+                type: 'review',
+                user: review.reviewer,
+                content: `Reviewed ${review.course_code || review.course_name}`,
+                created_at: review.created_at,
+                id: `review-${review.id}`,
+                data: review
+              });
+            });
+          }
+
+          // Add resources
+          if (resourcesData.data) {
+            resourcesData.data.forEach(resource => {
+              activities.push({
+                type: 'resource',
+                user: resource.uploader,
+                content: `Shared a new resource: ${resource.title}`,
+                created_at: resource.created_at,
+                id: `resource-${resource.id}`,
+                data: resource
+              });
+            });
+          }
+
+          // Sort by created_at and take the most recent 5
+          activities.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+          setRecentActivity(activities.slice(0, 5));
         }
 
         // Fetch upcoming events (events user has RSVP'd to)
@@ -624,34 +744,91 @@ export default function Dashboard() {
                 </div>
                 {recentActivity.length > 0 ? (
                   <div className="space-y-4">
-                    {recentActivity.map((activity) => (
-                      <div key={activity.id} className="flex items-start space-x-3 pb-4 border-b border-gray-200 dark:border-dark-border last:border-0">
-                        <div className="flex-shrink-0">
-                          <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white">
-                            {activity.user?.profile_image_url ? (
-                              <img
-                                src={activity.user.profile_image_url}
-                                alt={activity.user.username}
-                                className="w-full h-full object-cover rounded-full"
-                              />
-                            ) : (
-                              <FiUser size={20} />
+                    {recentActivity.map((activity) => {
+                      // Determine icon and color based on activity type
+                      let ActivityIcon = FiMessageSquare;
+                      let iconColor = 'text-purple-600 dark:text-purple-400';
+                      let bgColor = 'bg-purple-100 dark:bg-purple-900/30';
+
+                      if (activity.type === 'study_group') {
+                        ActivityIcon = FiUsers;
+                        iconColor = 'text-primary-600 dark:text-primary-400';
+                        bgColor = 'bg-primary-100 dark:bg-primary-900/30';
+                      } else if (activity.type === 'event') {
+                        ActivityIcon = FiCalendar;
+                        iconColor = 'text-accent-teal';
+                        bgColor = 'bg-accent-teal/10 dark:bg-accent-teal/20';
+                      } else if (activity.type === 'review') {
+                        ActivityIcon = FiStar;
+                        iconColor = 'text-accent-sage';
+                        bgColor = 'bg-accent-sage/10 dark:bg-accent-sage/20';
+                      } else if (activity.type === 'resource') {
+                        ActivityIcon = FiFile;
+                        iconColor = 'text-accent-peach';
+                        bgColor = 'bg-accent-peach/10 dark:bg-accent-peach/20';
+                      }
+
+                      return (
+                        <div key={activity.id} className="flex items-start space-x-3 pb-4 border-b border-gray-200 dark:border-dark-border last:border-0">
+                          <div className="flex-shrink-0">
+                            <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white">
+                              {activity.user?.profile_image_url ? (
+                                <img
+                                  src={activity.user.profile_image_url}
+                                  alt={activity.user.username}
+                                  className="w-full h-full object-cover rounded-full"
+                                />
+                              ) : (
+                                <FiUser size={20} />
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="text-sm font-medium text-gray-900 dark:text-dark-text-primary">
+                                {activity.user?.username || 'Unknown User'}
+                              </p>
+                              <div className={`p-1 ${bgColor} rounded`}>
+                                <ActivityIcon className={iconColor} size={14} />
+                              </div>
+                            </div>
+                            <p className="text-sm text-gray-600 dark:text-dark-text-secondary mt-1 line-clamp-2">
+                              {activity.content}
+                            </p>
+                            {activity.type === 'post' && activity.data?.image_url && (
+                              <div className="mt-2 rounded-lg overflow-hidden border border-gray-200 dark:border-dark-border">
+                                <img
+                                  src={activity.data.image_url}
+                                  alt="Post attachment"
+                                  className="w-full max-h-32 object-cover bg-gray-100 dark:bg-dark-bg"
+                                />
+                              </div>
                             )}
+                            <div className="flex items-center gap-4 mt-2">
+                              <p className="text-xs text-gray-400 dark:text-gray-500">
+                                {new Date(activity.created_at).toLocaleDateString()}
+                              </p>
+                              {activity.type === 'post' && activity.data?.interactionCounts && (
+                                <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                                  <span className="flex items-center gap-1">
+                                    <FiThumbsUp size={12} />
+                                    {activity.data.interactionCounts.likes}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <FiMessageCircle size={12} />
+                                    {activity.data.interactionCounts.comments}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <FiShare2 size={12} />
+                                    {activity.data.interactionCounts.shares}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 dark:text-dark-text-primary">
-                            {activity.user?.username || 'Unknown User'}
-                          </p>
-                          <p className="text-sm text-gray-600 dark:text-dark-text-secondary mt-1 line-clamp-2">
-                            {activity.content}
-                          </p>
-                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                            {new Date(activity.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <p className="text-gray-500 dark:text-dark-text-secondary text-center py-8">

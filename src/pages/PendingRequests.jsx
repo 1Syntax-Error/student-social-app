@@ -210,9 +210,10 @@ export default function PendingRequests() {
       <Navbar />
 
       <main className="flex-1 bg-gray-50 dark:bg-dark-bg py-8">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-          {/* Incoming Friend Requests Section */}
-          <div className="bg-white dark:bg-dark-surface rounded-lg shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-dark-border">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Incoming Friend Requests Section */}
+            <div className="bg-white dark:bg-dark-surface rounded-lg shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-dark-border">
             <div className="flex items-center mb-6">
               <FiUserPlus className="text-primary-600 dark:text-primary-400 mr-3" size={28} />
               <h1 className="text-2xl font-bold text-gray-900 dark:text-dark-text-primary">
@@ -298,10 +299,10 @@ export default function PendingRequests() {
                 ))}
               </div>
             )}
-          </div>
+            </div>
 
-          {/* Sent Friend Requests Section */}
-          <div className="bg-white dark:bg-dark-surface rounded-lg shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-dark-border">
+            {/* Sent Friend Requests Section */}
+            <div className="bg-white dark:bg-dark-surface rounded-lg shadow-sm p-4 sm:p-6 border border-gray-200 dark:border-dark-border">
             <div className="flex items-center mb-6">
               <FiClock className="text-yellow-600 dark:text-yellow-400 mr-3" size={28} />
               <h2 className="text-2xl font-bold text-gray-900 dark:text-dark-text-primary">
@@ -381,6 +382,7 @@ export default function PendingRequests() {
                 ))}
               </div>
             )}
+            </div>
           </div>
         </div>
       </main>
