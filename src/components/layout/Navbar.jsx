@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { FiUser, FiMenu, FiX } from 'react-icons/fi';
+import { FiUser, FiMenu, FiX, FiUsers } from 'react-icons/fi';
 import { useState } from 'react';
 import { colors } from '../../utils/colors';
 import DarkModeToggle from '../common/DarkModeToggle';
@@ -25,8 +25,23 @@ export default function Navbar() {
           {/* Logo */}
           <div className="flex items-center">
             <div className="flex-shrink-0 flex items-center">
-              <Link to="/" className={`text-xl font-bold bg-primary-600 dark:bg-primary-500 text-white px-3 py-1 rounded`}>
-                Campus Connect
+              <Link to="/" className="flex items-center space-x-2 group">
+                {/* Logo Icon */}
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg blur-sm opacity-75 group-hover:opacity-100 transition-opacity"></div>
+                  <div className="relative bg-gradient-to-br from-primary-600 to-primary-700 dark:from-primary-500 dark:to-primary-600 p-2 rounded-lg shadow-lg">
+                    <FiUsers className="text-white" size={24} />
+                  </div>
+                </div>
+                {/* Logo Text */}
+                <div className="flex flex-col leading-tight">
+                  <span className="text-2xl font-extrabold bg-gradient-to-r from-primary-600 to-primary-700 dark:from-primary-400 dark:to-primary-500 bg-clip-text text-transparent group-hover:from-primary-700 group-hover:to-primary-800 dark:group-hover:from-primary-300 dark:group-hover:to-primary-400 transition-all">
+                    Campus
+                  </span>
+                  <span className="text-xs font-bold text-primary-600 dark:text-primary-400 tracking-widest uppercase -mt-1">
+                    Connect
+                  </span>
+                </div>
               </Link>
             </div>
           </div>

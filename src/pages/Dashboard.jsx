@@ -1,7 +1,7 @@
 // src/pages/Dashboard.jsx
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiUsers, FiSearch, FiUser, FiArrowRight, FiEdit3, FiBookOpen, FiMapPin, FiLinkedin, FiUserPlus, FiCalendar, FiBook, FiFile, FiAward, FiActivity } from 'react-icons/fi';
+import { FiUsers, FiSearch, FiUser, FiArrowRight, FiEdit3, FiBookOpen, FiMapPin, FiLinkedin, FiUserPlus, FiCalendar, FiBook, FiFile, FiAward, FiActivity, FiMessageCircle, FiTrendingUp, FiClock, FiStar } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../utils/supabaseClient';
 import Navbar from '../components/layout/Navbar';
@@ -17,6 +17,32 @@ export default function Dashboard() {
   const [friendCount, setFriendCount] = useState(0);
   const [pendingRequestCount, setPendingRequestCount] = useState(0);
   const [loading, setLoading] = useState(true);
+
+  // Stats state
+  const [stats, setStats] = useState({
+    postsCount: 0,
+    eventsCount: 0,
+    studyGroupsCount: 0,
+    resourcesCount: 0
+  });
+
+  // Activity feed state
+  const [recentActivity, setRecentActivity] = useState([]);
+
+  // Upcoming events state
+  const [upcomingEvents, setUpcomingEvents] = useState([]);
+
+  // Active study groups state
+  const [activeStudyGroups, setActiveStudyGroups] = useState([]);
+
+  // Trending groups state
+  const [trendingGroups, setTrendingGroups] = useState([]);
+
+  // Recent resources state
+  const [recentResources, setRecentResources] = useState([]);
+
+  // Achievements state
+  const [achievements, setAchievements] = useState([]);
   
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -168,6 +194,138 @@ export default function Dashboard() {
         }
 
         setSuggestedUsers(suggestedUsersWithPriority);
+
+        // Fetch user stats
+        const [postsResult, eventsResult, studyGroupsResult, resourcesResult] = await Promise.all([
+          supabase.from('posts').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+          supabase.from('event_attendees').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+          supabase.from('study_group_members').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
+          supabase.from('resources').select('*', { count: 'exact', head: true }).eq('user_id', user.id)
+        ]);
+
+        setStats({
+          postsCount: postsResult.count || 0,
+          eventsCount: eventsResult.count || 0,
+          studyGroupsCount: studyGroupsResult.count || 0,
+          resourcesCount: resourcesResult.count || 0
+        });
+
+        // Fetch recent activity (posts and comments from friends)
+        if (friendIds.length > 0) {
+          const { data: recentPosts } = await supabase
+            .from('posts')
+            .select('*, profiles!posts_user_id_fkey(*)')
+            .in('user_id', friendIds)
+            .order('created_at', { ascending: false })
+            .limit(5);
+
+          if (recentPosts) {
+            setRecentActivity(recentPosts.map(post => ({
+              type: 'post',
+              user: post.profiles,
+              content: post.content,
+              created_at: post.created_at,
+              id: post.id
+            })));
+          }
+        }
+
+        // Fetch upcoming events (events user has RSVP'd to)
+        const { data: userEvents } = await supabase
+          .from('event_attendees')
+          .select('event_id')
+          .eq('user_id', user.id);
+
+        if (userEvents && userEvents.length > 0) {
+          const eventIds = userEvents.map(e => e.event_id);
+          const { data: eventsData } = await supabase
+            .from('events')
+            .select('*')
+            .in('id', eventIds)
+            .gte('date', new Date().toISOString())
+            .order('date', { ascending: true })
+            .limit(3);
+
+          setUpcomingEvents(eventsData || []);
+        }
+
+        // Fetch active study groups (user's groups with recent activity)
+        const { data: userGroups } = await supabase
+          .from('study_group_members')
+          .select('group_id')
+          .eq('user_id', user.id);
+
+        if (userGroups && userGroups.length > 0) {
+          const groupIds = userGroups.map(g => g.group_id);
+          const { data: groupsData } = await supabase
+            .from('study_groups')
+            .select('*, study_group_members(count)')
+            .in('id', groupIds)
+            .order('created_at', { ascending: false })
+            .limit(3);
+
+          setActiveStudyGroups(groupsData || []);
+        }
+
+        // Fetch trending study groups (most members)
+        const { data: popularGroups } = await supabase
+          .from('study_groups')
+          .select('*, study_group_members(count)')
+          .order('created_at', { ascending: false })
+          .limit(4);
+
+        setTrendingGroups(popularGroups || []);
+
+        // Fetch recent resources
+        const { data: resourcesData } = await supabase
+          .from('resources')
+          .select('*, profiles!resources_user_id_fkey(*)')
+          .order('created_at', { ascending: false })
+          .limit(4);
+
+        setRecentResources(resourcesData || []);
+
+        // Calculate achievements
+        const userAchievements = [];
+
+        if (friendIds.length >= 10) {
+          userAchievements.push({
+            icon: FiUsers,
+            title: 'Social Butterfly',
+            description: 'Connected with 10+ students',
+            color: 'text-blue-500'
+          });
+        }
+
+        if (postsResult.count >= 5) {
+          userAchievements.push({
+            icon: FiMessageCircle,
+            title: 'Active Contributor',
+            description: 'Created 5+ posts',
+            color: 'text-green-500'
+          });
+        }
+
+        if (studyGroupsResult.count >= 3) {
+          userAchievements.push({
+            icon: FiBook,
+            title: 'Study Champion',
+            description: 'Joined 3+ study groups',
+            color: 'text-purple-500'
+          });
+        }
+
+        if (eventsResult.count >= 5) {
+          userAchievements.push({
+            icon: FiCalendar,
+            title: 'Event Enthusiast',
+            description: 'Attended 5+ events',
+            color: 'text-orange-500'
+          });
+        }
+
+        setAchievements(userAchievements);
+
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -200,136 +358,551 @@ export default function Dashboard() {
 
       <main className="flex-1 bg-gray-50 dark:bg-dark-bg py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Enlarged welcome section */}
-          <div className="bg-gradient-to-br from-white to-primary-50 dark:from-dark-surface dark:to-dark-surface rounded-lg shadow-md dark:shadow-none p-8 mb-6 border border-primary-200 dark:border-dark-border">
-            <div className="flex flex-col md:flex-row gap-6">
-              {/* Avatar with larger size */}
-              <div className="flex-shrink-0">
-                <div className="w-36 h-36 bg-primary-600 rounded-full flex items-center justify-center text-white shadow-lg border-4 border-primary-300">
-                  {user.profile_image_url ? (
-                    <img 
-                      src={user.profile_image_url} 
-                      alt={`${user.username}'s profile`} 
-                      className="w-full h-full object-cover rounded-full"
-                    />
-                  ) : (
-                    <FiUser size={56} />
-                  )}
-                </div>
-              </div>
-              
-              {/* User info */}
-              <div className="flex-1">
-                <h1 className="text-3xl font-bold text-primary-800 dark:text-dark-text-primary mb-2 border-b-2 border-primary-300 dark:border-dark-border pb-2">
-                  {user.username}
-                </h1>
-                
-                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <h2 className="text-lg font-medium text-primary-700 dark:text-dark-text-primary">Profile</h2>
-                    <ul className="mt-2 space-y-2">
-                      <li className="flex items-center text-gray-700 dark:text-dark-text-secondary p-2 rounded-md bg-white dark:bg-dark-bg bg-opacity-60 hover:bg-primary-100 dark:hover:bg-dark-border transition-colors duration-200 shadow-sm">
-                        <FiMapPin className="mr-2 text-primary-600 dark:text-primary-400" />
-                        {user.university ? user.university : <span className="text-gray-400 dark:text-gray-500">Add your university</span>}
-                      </li>
-                      <li className="flex items-center text-gray-700 dark:text-dark-text-secondary p-2 rounded-md bg-white dark:bg-dark-bg bg-opacity-60 hover:bg-primary-100 dark:hover:bg-dark-border transition-colors duration-200 shadow-sm">
-                        <FiBookOpen className="mr-2 text-primary-600 dark:text-primary-400" />
-                        {user.major ? user.major : <span className="text-gray-400 dark:text-gray-500">Add your major</span>}
-                      </li>
-                      <li className="flex items-center text-gray-700 dark:text-dark-text-secondary p-2 rounded-md bg-white dark:bg-dark-bg bg-opacity-60 hover:bg-primary-100 dark:hover:bg-dark-border transition-colors duration-200 shadow-sm">
-                        <FiLinkedin className="mr-2 text-primary-600 dark:text-primary-400" />
-                        {user.linkedin_url ?
-                          <a
-                            href={user.linkedin_url.startsWith('http') ? user.linkedin_url : `https://${user.linkedin_url}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary-700 dark:text-primary-400 hover:underline font-medium"
-                          >
-                            LinkedIn Profile
-                          </a> :
-                          <span className="text-gray-400 dark:text-gray-500">Add LinkedIn URL</span>
-                        }
-                      </li>
-                    </ul>
-                  </div>
+          {/* Enhanced welcome section */}
+          <div className="card p-8 mb-6">
+            {/* Name Header */}
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-extrabold text-gray-900 dark:text-dark-text-primary">
+                {user.username}
+              </h1>
+            </div>
 
-                  <div>
-                    <h2 className="text-lg font-medium text-primary-700 dark:text-dark-text-primary mb-2">Your Network</h2>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                      <Link
-                        to={`/friends/${user.id}`}
-                        className="bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-md shadow-sm flex items-center justify-center space-x-1.5 transition-colors duration-200"
-                      >
-                        <FiUsers className="text-base" />
-                        <span className="text-sm font-medium whitespace-nowrap">
-                          {friendCount} {friendCount === 1 ? 'Friend' : 'Friends'}
-                        </span>
-                      </Link>
-                      <button
-                        className="bg-primary-600 hover:bg-primary-700 text-white p-2 rounded-md shadow-sm flex items-center justify-center space-x-1.5 transition-colors duration-200 relative"
-                        onClick={() => navigate('/pending-requests')}
-                      >
-                        <FiUserPlus className="text-base" />
-                        <span className="text-sm font-medium whitespace-nowrap">Friend Requests</span>
-                        {pendingRequestCount > 0 && (
-                          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center shadow-md">
-                            {pendingRequestCount}
-                          </span>
-                        )}
-                      </button>
+            {/* Three Column Layout: Profile Details | Avatar | Network */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+              {/* Left Column - Profile Information */}
+              <div className="bg-gray-50 dark:bg-dark-bg rounded-xl p-5 border border-gray-200 dark:border-dark-border hover:shadow-md transition-all duration-300">
+                <h2 className="text-lg font-bold mb-4 flex items-center text-gray-900 dark:text-dark-text-primary">
+                  <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg mr-3">
+                    <FiUser size={20} className="text-primary-600 dark:text-primary-400" />
+                  </div>
+                  Profile Details
+                </h2>
+                <ul className="space-y-3">
+                  <li className="flex items-center p-3 rounded-lg bg-white dark:bg-dark-surface hover:bg-gray-100 dark:hover:bg-dark-bg transition-all duration-200 group border border-gray-200 dark:border-dark-border">
+                    <div className="p-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg mr-3 group-hover:bg-primary-100 dark:group-hover:bg-primary-900/30 transition-colors">
+                      <FiMapPin size={18} className="text-primary-600 dark:text-primary-400" />
                     </div>
-                    
-                    <div className="mt-4">
-                      {user.bio ? (
-                        <div className="bg-white dark:bg-dark-bg rounded-lg p-3 shadow-sm border border-primary-100 dark:border-dark-border">
-                          <h3 className="text-sm font-medium text-primary-700 dark:text-dark-text-primary mb-1">Bio</h3>
-                          <p className="text-gray-700 dark:text-dark-text-secondary">{user.bio}</p>
-                        </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500 dark:text-dark-text-secondary mb-0.5">University</p>
+                      {user.university ? (
+                        <p className="font-semibold text-gray-900 dark:text-dark-text-primary">{user.university}</p>
                       ) : (
-                        <div className="bg-white dark:bg-dark-bg rounded-lg p-3 shadow-sm border border-gray-200 dark:border-dark-border">
-                          <h3 className="text-sm font-medium text-primary-700 dark:text-dark-text-primary mb-1">Bio</h3>
-                          <p className="text-gray-400 dark:text-gray-500 italic text-sm">Add a bio to tell others about yourself</p>
-                        </div>
+                        <p className="text-gray-400 dark:text-gray-500 italic text-sm">Not specified</p>
+                      )}
+                    </div>
+                  </li>
+                  <li className="flex items-center p-3 rounded-lg bg-white dark:bg-dark-surface hover:bg-gray-100 dark:hover:bg-dark-bg transition-all duration-200 group border border-gray-200 dark:border-dark-border">
+                    <div className="p-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg mr-3 group-hover:bg-primary-100 dark:group-hover:bg-primary-900/30 transition-colors">
+                      <FiBookOpen size={18} className="text-primary-600 dark:text-primary-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500 dark:text-dark-text-secondary mb-0.5">Major</p>
+                      {user.major ? (
+                        <p className="font-semibold text-gray-900 dark:text-dark-text-primary">{user.major}</p>
+                      ) : (
+                        <p className="text-gray-400 dark:text-gray-500 italic text-sm">Not specified</p>
+                      )}
+                    </div>
+                  </li>
+                  <li className="flex items-center p-3 rounded-lg bg-white dark:bg-dark-surface hover:bg-gray-100 dark:hover:bg-dark-bg transition-all duration-200 group border border-gray-200 dark:border-dark-border">
+                    <div className="p-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg mr-3 group-hover:bg-primary-100 dark:group-hover:bg-primary-900/30 transition-colors">
+                      <FiLinkedin size={18} className="text-primary-600 dark:text-primary-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-500 dark:text-dark-text-secondary mb-0.5">LinkedIn</p>
+                      {user.linkedin_url ? (
+                        <a
+                          href={user.linkedin_url.startsWith('http') ? user.linkedin_url : `https://${user.linkedin_url}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold text-primary-600 dark:text-primary-400 hover:underline flex items-center"
+                        >
+                          View Profile <FiArrowRight className="ml-1" size={14} />
+                        </a>
+                      ) : (
+                        <p className="text-gray-400 dark:text-gray-500 italic text-sm">Not added</p>
+                      )}
+                    </div>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Center Column - Avatar */}
+              <div className="flex items-center justify-center">
+                <div className="flex-shrink-0 relative group">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-primary-400 to-primary-600 rounded-full blur-sm group-hover:blur-md transition-all duration-300"></div>
+                  <div className="relative w-44 h-44 bg-white dark:bg-dark-surface rounded-full p-1 shadow-2xl border-4 border-gray-100 dark:border-dark-border">
+                    <div className="w-full h-full bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center text-white overflow-hidden">
+                      {user.profile_image_url ? (
+                        <img
+                          src={user.profile_image_url}
+                          alt={`${user.username}'s profile`}
+                          className="w-full h-full object-cover rounded-full"
+                        />
+                      ) : (
+                        <FiUser size={72} />
                       )}
                     </div>
                   </div>
+                  {/* Online status indicator */}
+                  <div className="absolute bottom-3 right-3 w-7 h-7 bg-green-400 border-4 border-white dark:border-dark-surface rounded-full shadow-lg"></div>
+                </div>
+              </div>
+
+              {/* Right Column - Network & Bio */}
+              <div className="bg-gray-50 dark:bg-dark-bg rounded-xl p-5 border border-gray-200 dark:border-dark-border hover:shadow-md transition-all duration-300">
+                <h2 className="text-lg font-bold mb-4 flex items-center text-gray-900 dark:text-dark-text-primary">
+                  <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg mr-3">
+                    <FiUsers size={20} className="text-primary-600 dark:text-primary-400" />
+                  </div>
+                  Your Network
+                </h2>
+
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <Link
+                    to={`/friends/${user.id}`}
+                    className="bg-white dark:bg-dark-surface hover:bg-primary-50 dark:hover:bg-primary-900/20 border border-gray-200 dark:border-dark-border p-4 rounded-xl transition-all duration-200 hover:shadow-md group"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <FiUsers className="text-2xl text-primary-600 dark:text-primary-400" />
+                    </div>
+                    <p className="text-3xl font-bold mb-1 text-gray-900 dark:text-dark-text-primary">{friendCount}</p>
+                    <p className="text-sm text-gray-600 dark:text-dark-text-secondary">{friendCount === 1 ? 'Friend' : 'Friends'}</p>
+                  </Link>
+
+                  <button
+                    onClick={() => navigate('/pending-requests')}
+                    className="bg-white dark:bg-dark-surface hover:bg-primary-50 dark:hover:bg-primary-900/20 border border-gray-200 dark:border-dark-border p-4 rounded-xl transition-all duration-200 hover:shadow-md relative group"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <FiUserPlus className="text-2xl text-primary-600 dark:text-primary-400" />
+                      {pendingRequestCount > 0 && (
+                        <span className="bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-lg">
+                          {pendingRequestCount}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-dark-text-secondary text-left">Friend Requests</p>
+                  </button>
+                </div>
+
+                {/* Bio Section */}
+                <div className="bg-white dark:bg-dark-surface rounded-lg p-4 border border-gray-200 dark:border-dark-border">
+                  <h3 className="text-sm font-semibold mb-2 flex items-center text-gray-900 dark:text-dark-text-primary">
+                    <FiEdit3 size={14} className="mr-2" />
+                    Bio
+                  </h3>
+                  {user.bio ? (
+                    <p className="text-sm text-gray-700 dark:text-dark-text-secondary leading-relaxed">{user.bio}</p>
+                  ) : (
+                    <p className="text-gray-400 dark:text-gray-500 italic text-sm">No bio added yet</p>
+                  )}
                 </div>
               </div>
             </div>
           </div>
           
-          {/* Action buttons moved outside the card with consistent styling */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+          {/* Enhanced Action buttons */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <Link
               to="/feeds"
-              className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-dark-surface"
+              className="card p-4 hover:shadow-lg transition-all duration-200 hover:scale-105 group bg-primary-50 dark:bg-primary-900/20 border-primary-100 dark:border-primary-800"
             >
-              <FiActivity className="mr-2" />
-              <span>Activity Feed</span>
+              <div className="flex items-center justify-center">
+                <div className="p-2 bg-primary-100 dark:bg-primary-800/40 rounded-lg mr-3 group-hover:bg-primary-200 dark:group-hover:bg-primary-700/40 transition-colors">
+                  <FiActivity className="text-primary-600 dark:text-primary-400" size={20} />
+                </div>
+                <span className="font-semibold text-primary-700 dark:text-primary-400">Activity Feed</span>
+              </div>
             </Link>
             <Link
               to="/explore"
-              className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-dark-surface"
+              className="card p-4 hover:shadow-lg transition-all duration-200 hover:scale-105 group bg-purple-50 dark:bg-purple-900/20 border-purple-100 dark:border-purple-800"
             >
-              <FiSearch className="mr-2" />
-              <span>Explore Students</span>
+              <div className="flex items-center justify-center">
+                <div className="p-2 bg-purple-100 dark:bg-purple-800/40 rounded-lg mr-3 group-hover:bg-purple-200 dark:group-hover:bg-purple-700/40 transition-colors">
+                  <FiSearch className="text-purple-600 dark:text-purple-400" size={20} />
+                </div>
+                <span className="font-semibold text-purple-700 dark:text-purple-400">Explore Students</span>
+              </div>
             </Link>
             <Link
               to={`/profile/${user.id}`}
-              className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-dark-surface"
+              className="card p-4 hover:shadow-lg transition-all duration-200 hover:scale-105 group bg-teal-50 dark:bg-teal-900/20 border-teal-100 dark:border-teal-800"
             >
-              <FiUser className="mr-2" />
-              <span>View Your Profile</span>
+              <div className="flex items-center justify-center">
+                <div className="p-2 bg-teal-100 dark:bg-teal-800/40 rounded-lg mr-3 group-hover:bg-teal-200 dark:group-hover:bg-teal-700/40 transition-colors">
+                  <FiUser className="text-teal-600 dark:text-teal-400" size={20} />
+                </div>
+                <span className="font-semibold text-teal-700 dark:text-teal-400">Your Profile</span>
+              </div>
             </Link>
             <Link
               to="/edit-profile"
-              className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:focus:ring-offset-dark-surface"
+              className="card p-4 hover:shadow-lg transition-all duration-200 hover:scale-105 group bg-orange-50 dark:bg-orange-900/20 border-orange-100 dark:border-orange-800"
             >
-              <FiEdit3 className="mr-2" />
-              <span>Edit Profile</span>
+              <div className="flex items-center justify-center">
+                <div className="p-2 bg-orange-100 dark:bg-orange-800/40 rounded-lg mr-3 group-hover:bg-orange-200 dark:group-hover:bg-orange-700/40 transition-colors">
+                  <FiEdit3 className="text-orange-600 dark:text-orange-400" size={20} />
+                </div>
+                <span className="font-semibold text-orange-700 dark:text-orange-400">Edit Profile</span>
+              </div>
             </Link>
           </div>
-          
+
+          {/* Activity Stats Cards */}
+          <div className="mb-8">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-dark-text-primary mb-4">
+              <FiActivity className="inline mr-2" />
+              Your Activity
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="card p-6 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border-blue-200 dark:border-blue-800">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Total Posts</p>
+                    <p className="text-3xl font-bold text-blue-700 dark:text-blue-300 mt-1">{stats.postsCount}</p>
+                  </div>
+                  <div className="p-3 bg-blue-200 dark:bg-blue-800/40 rounded-lg">
+                    <FiMessageCircle className="text-blue-600 dark:text-blue-400" size={24} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="card p-6 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-800">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-green-600 dark:text-green-400 font-medium">Events Joined</p>
+                    <p className="text-3xl font-bold text-green-700 dark:text-green-300 mt-1">{stats.eventsCount}</p>
+                  </div>
+                  <div className="p-3 bg-green-200 dark:bg-green-800/40 rounded-lg">
+                    <FiCalendar className="text-green-600 dark:text-green-400" size={24} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="card p-6 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border-purple-200 dark:border-purple-800">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-purple-600 dark:text-purple-400 font-medium">Study Groups</p>
+                    <p className="text-3xl font-bold text-purple-700 dark:text-purple-300 mt-1">{stats.studyGroupsCount}</p>
+                  </div>
+                  <div className="p-3 bg-purple-200 dark:bg-purple-800/40 rounded-lg">
+                    <FiBook className="text-purple-600 dark:text-purple-400" size={24} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="card p-6 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border-orange-200 dark:border-orange-800">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-orange-600 dark:text-orange-400 font-medium">Resources Shared</p>
+                    <p className="text-3xl font-bold text-orange-700 dark:text-orange-300 mt-1">{stats.resourcesCount}</p>
+                  </div>
+                  <div className="p-3 bg-orange-200 dark:bg-orange-800/40 rounded-lg">
+                    <FiFile className="text-orange-600 dark:text-orange-400" size={24} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Two Column Layout for Activity & Widgets */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            {/* Left Column - Takes 2/3 width */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Recent Activity Feed */}
+              <div className="card p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-dark-text-primary flex items-center">
+                    <FiActivity className="mr-2" />
+                    Recent Activity
+                  </h3>
+                  <Link to="/feeds" className="text-sm text-primary-600 dark:text-primary-400 hover:underline">
+                    View All
+                  </Link>
+                </div>
+                {recentActivity.length > 0 ? (
+                  <div className="space-y-4">
+                    {recentActivity.map((activity) => (
+                      <div key={activity.id} className="flex items-start space-x-3 pb-4 border-b border-gray-200 dark:border-dark-border last:border-0">
+                        <div className="flex-shrink-0">
+                          <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center text-white">
+                            {activity.user?.profile_image_url ? (
+                              <img
+                                src={activity.user.profile_image_url}
+                                alt={activity.user.username}
+                                className="w-full h-full object-cover rounded-full"
+                              />
+                            ) : (
+                              <FiUser size={20} />
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-dark-text-primary">
+                            {activity.user?.username || 'Unknown User'}
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-dark-text-secondary mt-1 line-clamp-2">
+                            {activity.content}
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                            {new Date(activity.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 dark:text-dark-text-secondary text-center py-8">
+                    No recent activity from friends. Start connecting with other students!
+                  </p>
+                )}
+              </div>
+
+              {/* Upcoming Events */}
+              <div className="card p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-dark-text-primary flex items-center">
+                    <FiCalendar className="mr-2" />
+                    Upcoming Events
+                  </h3>
+                  <Link to="/events" className="text-sm text-primary-600 dark:text-primary-400 hover:underline">
+                    View All
+                  </Link>
+                </div>
+                {upcomingEvents.length > 0 ? (
+                  <div className="space-y-3">
+                    {upcomingEvents.map((event) => (
+                      <Link
+                        key={event.id}
+                        to={`/events/${event.id}`}
+                        className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-bg transition-colors"
+                      >
+                        <div className="flex-shrink-0 p-2 bg-accent-teal/10 dark:bg-accent-teal/20 rounded-lg">
+                          <FiCalendar className="text-accent-teal" size={20} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-dark-text-primary">
+                            {event.name}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-dark-text-secondary">
+                            {new Date(event.date).toLocaleDateString()} at {event.time}
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                            {event.location}
+                          </p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 dark:text-dark-text-secondary text-center py-8">
+                    No upcoming events. Browse events to RSVP!
+                  </p>
+                )}
+              </div>
+
+              {/* Trending Groups */}
+              <div className="card p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-dark-text-primary flex items-center">
+                    <FiTrendingUp className="mr-2" />
+                    Popular Study Groups
+                  </h3>
+                  <Link to="/study-groups" className="text-sm text-primary-600 dark:text-primary-400 hover:underline">
+                    View All
+                  </Link>
+                </div>
+                {trendingGroups.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {trendingGroups.map((group) => (
+                      <Link
+                        key={group.id}
+                        to={`/study-groups/${group.id}`}
+                        className="p-4 border border-gray-200 dark:border-dark-border rounded-lg hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="text-sm font-semibold text-gray-900 dark:text-dark-text-primary line-clamp-1">
+                            {group.name}
+                          </h4>
+                          <FiUsers className="text-primary-600 dark:text-primary-400 flex-shrink-0 ml-2" size={16} />
+                        </div>
+                        <p className="text-xs text-gray-600 dark:text-dark-text-secondary line-clamp-2">
+                          {group.description}
+                        </p>
+                        <div className="flex items-center mt-2 text-xs text-gray-500 dark:text-gray-400">
+                          <FiUsers size={12} className="mr-1" />
+                          <span>{group.study_group_members?.[0]?.count || 0} members</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 dark:text-dark-text-secondary text-center py-8">
+                    No study groups available yet.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Right Column - Takes 1/3 width */}
+            <div className="space-y-6">
+              {/* Achievements */}
+              {achievements.length > 0 && (
+                <div className="card p-6">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-dark-text-primary flex items-center mb-4">
+                    <FiAward className="mr-2" />
+                    Achievements
+                  </h3>
+                  <div className="space-y-3">
+                    {achievements.map((achievement, index) => (
+                      <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 dark:bg-dark-bg rounded-lg">
+                        <div className={`flex-shrink-0 ${achievement.color}`}>
+                          <achievement.icon size={24} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-dark-text-primary">
+                            {achievement.title}
+                          </p>
+                          <p className="text-xs text-gray-600 dark:text-dark-text-secondary">
+                            {achievement.description}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Active Study Groups */}
+              <div className="card p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-dark-text-primary flex items-center">
+                    <FiBook className="mr-2" />
+                    Your Groups
+                  </h3>
+                  <Link to="/study-groups" className="text-sm text-primary-600 dark:text-primary-400 hover:underline">
+                    View All
+                  </Link>
+                </div>
+                {activeStudyGroups.length > 0 ? (
+                  <div className="space-y-3">
+                    {activeStudyGroups.map((group) => (
+                      <Link
+                        key={group.id}
+                        to={`/study-groups/${group.id}`}
+                        className="block p-3 border border-gray-200 dark:border-dark-border rounded-lg hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
+                      >
+                        <p className="text-sm font-medium text-gray-900 dark:text-dark-text-primary">
+                          {group.name}
+                        </p>
+                        <div className="flex items-center mt-2 text-xs text-gray-500 dark:text-gray-400">
+                          <FiUsers size={12} className="mr-1" />
+                          <span>{group.study_group_members?.[0]?.count || 0} members</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 dark:text-dark-text-secondary text-sm py-4">
+                    You haven't joined any study groups yet.
+                  </p>
+                )}
+              </div>
+
+              {/* Quick Actions */}
+              <div className="card p-6">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-dark-text-primary mb-4">
+                  Quick Actions
+                </h3>
+                <div className="space-y-2">
+                  <Link
+                    to="/feeds"
+                    className="flex items-center justify-between p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors"
+                  >
+                    <span className="text-sm font-medium text-primary-700 dark:text-primary-400">Create Post</span>
+                    <FiMessageCircle className="text-primary-600 dark:text-primary-400" size={18} />
+                  </Link>
+                  <Link
+                    to="/events"
+                    className="flex items-center justify-between p-3 bg-accent-teal/10 dark:bg-accent-teal/20 rounded-lg hover:bg-accent-teal/20 dark:hover:bg-accent-teal/30 transition-colors"
+                  >
+                    <span className="text-sm font-medium text-accent-teal dark:text-accent-teal">Create Event</span>
+                    <FiCalendar className="text-accent-teal" size={18} />
+                  </Link>
+                  <Link
+                    to="/study-groups"
+                    className="flex items-center justify-between p-3 bg-accent-sage/10 dark:bg-accent-sage/20 rounded-lg hover:bg-accent-sage/20 dark:hover:bg-accent-sage/30 transition-colors"
+                  >
+                    <span className="text-sm font-medium text-accent-sage dark:text-accent-sage">Create Group</span>
+                    <FiUsers className="text-accent-sage" size={18} />
+                  </Link>
+                  <Link
+                    to="/resources"
+                    className="flex items-center justify-between p-3 bg-accent-peach/10 dark:bg-accent-peach/20 rounded-lg hover:bg-accent-peach/20 dark:hover:bg-accent-peach/30 transition-colors"
+                  >
+                    <span className="text-sm font-medium text-accent-peach dark:text-accent-peach">Share Resource</span>
+                    <FiFile className="text-accent-peach" size={18} />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Resources */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-dark-text-primary flex items-center">
+                <FiFile className="mr-2" />
+                Recent Resources
+              </h2>
+              <Link to="/resources" className="text-sm text-primary-600 dark:text-primary-400 hover:underline flex items-center">
+                View All <FiArrowRight className="ml-1" />
+              </Link>
+            </div>
+            {recentResources.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {recentResources.map((resource) => (
+                  <div key={resource.id} className="card p-4 hover:shadow-lg transition-shadow">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="p-2 bg-accent-peach/10 dark:bg-accent-peach/20 rounded-lg">
+                        <FiFile className="text-accent-peach" size={20} />
+                      </div>
+                      <span className="text-xs px-2 py-1 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 rounded">
+                        {resource.type || 'Resource'}
+                      </span>
+                    </div>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-dark-text-primary mb-2 line-clamp-2">
+                      {resource.title}
+                    </h3>
+                    <p className="text-xs text-gray-600 dark:text-dark-text-secondary mb-3 line-clamp-2">
+                      {resource.description}
+                    </p>
+                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                      <span className="flex items-center">
+                        <FiUser size={12} className="mr-1" />
+                        {resource.profiles?.username || 'Anonymous'}
+                      </span>
+                      <Link
+                        to={`/resources/${resource.id}`}
+                        className="text-primary-600 dark:text-primary-400 hover:underline"
+                      >
+                        View
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="card p-8 text-center">
+                <p className="text-gray-500 dark:text-dark-text-secondary">
+                  No resources available yet. Be the first to share!
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* Quick Access Features */}
           <div className="mb-8">
             <h2 className="text-xl font-bold text-gray-900 dark:text-dark-text-primary mb-4">

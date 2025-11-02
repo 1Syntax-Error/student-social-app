@@ -22,6 +22,7 @@ const Resources = lazy(() => import('./pages/Resources'));
 const PendingRequests = lazy(() => import('./pages/PendingRequests'));
 const Friends = lazy(() => import('./pages/Friends'));
 const Feeds = lazy(() => import('./pages/Feeds'));
+const Feedback = lazy(() => import('./pages/Feedback'));
 
 // Protected route component
 function ProtectedRoute({ children }) {
@@ -137,6 +138,7 @@ export default function App() {
                         </ProtectedRoute>
                       }
                     />
+                    <Route path="/feedback" element={<Feedback />} />
 
                     {/* Catch all - redirect to home */}
                     <Route path="*" element={<Navigate to="/" />} />
